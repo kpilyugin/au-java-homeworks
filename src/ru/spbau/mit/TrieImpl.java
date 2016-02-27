@@ -18,7 +18,7 @@ public class TrieImpl implements Trie {
     @Override
     public boolean contains(String element) {
         Node node = findNodeByPrefix(element);
-        return node != null && node.isTerminal();
+        return node != null && node.isTerminal;
     }
 
     @Override
@@ -39,8 +39,8 @@ public class TrieImpl implements Trie {
 
     private Node findNodeByPrefix(String prefix) {
         Node current = root;
-        for (int i = 0; i < prefix.length(); i++) {
-            current = current.getNextNode(prefix.charAt(i));
+        for (char letter : prefix.toCharArray()) {
+            current = current.getNextNode(letter);
             if (current == null) {
                 return null;
             }
@@ -50,24 +50,20 @@ public class TrieImpl implements Trie {
 
     private static class Node {
         private final Map<Character, Node> edges = new HashMap<>();
-        private boolean terminal = false;
+        private boolean isTerminal = false;
         private int numStringsInSubtree;
 
-        public boolean isTerminal() {
-            return terminal;
+        private int howManyStartsWith() {
+            return numStringsInSubtree + (isTerminal ? 1 : 0);
         }
 
-        public int howManyStartsWith() {
-            return numStringsInSubtree + (isTerminal() ? 1 : 0);
-        }
-
-        public boolean add(String element, int index) {
+        private boolean add(String element, int index) {
             boolean isLast = index == element.length();
             if (isLast) {
-                if (isTerminal()) {
+                if (isTerminal) {
                     return false;
                 }
-                terminal = true;
+                isTerminal = true;
                 return true;
             }
 
@@ -89,11 +85,11 @@ public class TrieImpl implements Trie {
             return true;
         }
 
-        public boolean remove(String element, int index) {
+        private boolean remove(String element, int index) {
             boolean isLast = index == element.length();
             if (isLast) {
-                if (isTerminal()) {
-                    terminal = false;
+                if (isTerminal) {
+                    isTerminal = false;
                     return true;
                 }
                 return false;
@@ -117,7 +113,7 @@ public class TrieImpl implements Trie {
             return true;
         }
 
-        public Node getNextNode(char letter) {
+        private Node getNextNode(char letter) {
             return edges.get(letter);
         }
     }
