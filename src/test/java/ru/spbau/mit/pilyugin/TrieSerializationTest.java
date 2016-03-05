@@ -15,12 +15,12 @@ import static org.junit.Assert.*;
 public class TrieSerializationTest {
 
     private final Random random = new Random();
-    private final ByteArrayOutputStream out = new ByteArrayOutputStream();
 
     private Trie trie;
     private Trie copy;
 
     private void copyTrie() throws IOException {
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
         trie.serialize(out);
         ByteArrayInputStream in = new ByteArrayInputStream(out.toByteArray(), 0, out.size());
         copy.deserialize(in);
@@ -30,7 +30,6 @@ public class TrieSerializationTest {
     public void setUp() {
         trie = new TrieImpl();
         copy = new TrieImpl();
-        out.reset();
     }
 
     @Test
