@@ -6,6 +6,7 @@ import org.junit.Test;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -85,6 +86,17 @@ public class TrieSerializationTest {
             String s = generateRandomString(2);
             assertEquals(trie.howManyStartsWithPrefix(s), copy.howManyStartsWithPrefix(s));
         }
+    }
+
+    @Test(expected=IOException.class)
+    public void testFail() throws IOException {
+        OutputStream outputStream = new OutputStream() {
+            @Override
+            public void write(int b) throws IOException {
+                throw new IOException("Fail");
+            }
+        };
+        trie.serialize(outputStream);
     }
 
     private String generateRandomString(int length) {
