@@ -1,4 +1,4 @@
-package ru.spbau.mit;
+package ru.spbau.mit.pilyugin;
 
 import org.junit.Test;
 

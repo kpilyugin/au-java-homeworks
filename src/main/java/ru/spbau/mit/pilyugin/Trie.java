@@ -1,6 +1,6 @@
-package ru.spbau.mit;
+package ru.spbau.mit.pilyugin;
 
-public interface Trie {
+public interface Trie extends StreamSerializable {
 
     /**
      * Expected complexity: O(|element|)

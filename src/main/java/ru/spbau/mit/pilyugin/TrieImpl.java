@@ -1,5 +1,6 @@
-package ru.spbau.mit;
+package ru.spbau.mit.pilyugin;
 
+import java.io.*;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -37,6 +38,16 @@ public class TrieImpl implements Trie {
         return node == null ? 0 : node.howManyStartsWith();
     }
 
+    @Override
+    public void serialize(OutputStream out) throws IOException {
+        root.serialize(new DataOutputStream(out));
+    }
+
+    @Override
+    public void deserialize(InputStream in) throws IOException {
+        root.deserialize(new DataInputStream(in));
+    }
+
     private Node findNodeByPrefix(String prefix) {
         Node current = root;
         for (char letter : prefix.toCharArray()) {
@@ -58,8 +69,7 @@ public class TrieImpl implements Trie {
         }
 
         private boolean add(String element, int index) {
-            boolean isLast = index == element.length();
-            if (isLast) {
+            if (index == element.length()) {
                 if (isTerminal) {
                     return false;
                 }
@@ -86,8 +96,7 @@ public class TrieImpl implements Trie {
         }
 
         private boolean remove(String element, int index) {
-            boolean isLast = index == element.length();
-            if (isLast) {
+            if (index == element.length()) {
                 if (isTerminal) {
                     isTerminal = false;
                     return true;
@@ -115,6 +124,29 @@ public class TrieImpl implements Trie {
 
         private Node getNextNode(char letter) {
             return edges.get(letter);
+        }
+
+        private void serialize(DataOutputStream out) throws IOException {
+            out.writeBoolean(isTerminal);
+            out.writeInt(numStringsInSubtree);
+            out.writeInt(edges.size());
+            for (Map.Entry<Character, Node> entry : edges.entrySet()) {
+                out.writeChar(entry.getKey());
+                entry.getValue().serialize(out);
+            }
+        }
+
+        private void deserialize(DataInputStream in) throws IOException {
+            isTerminal = in.readBoolean();
+            numStringsInSubtree = in.readInt();
+            int numEdges = in.readInt();
+            edges.clear();
+            for (int i = 0; i < numEdges; i++) {
+                char letter = in.readChar();
+                Node node = new Node();
+                edges.put(letter, node);
+                node.deserialize(in);
+            }
         }
     }
 }
