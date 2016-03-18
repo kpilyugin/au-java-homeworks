@@ -50,7 +50,7 @@ public class Collections {
     }
 
     private static <A, R> R processFoldr(Function2<? super A, ? super R, ? extends R> function,
-                                        R initialValue, Iterator<? extends A> iterator) {
+                                         R initialValue, Iterator<? extends A> iterator) {
         if (!iterator.hasNext()) {
             return initialValue;
         }
@@ -58,7 +58,7 @@ public class Collections {
     }
 
     private static <A, R> R processFoldl(Function2<? super R, ? super A, ? extends R> function,
-                                        R initialValue, Iterator<? extends A> iterator) {
+                                         R initialValue, Iterator<? extends A> iterator) {
         if (!iterator.hasNext()) {
             return initialValue;
         }
