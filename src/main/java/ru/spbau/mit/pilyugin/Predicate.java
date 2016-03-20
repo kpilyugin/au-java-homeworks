@@ -2,6 +2,9 @@ package ru.spbau.mit.pilyugin;
 
 public interface Predicate<A> extends Function1<A, Boolean> {
 
+    Predicate<Object> ALWAYS_TRUE = value -> true;
+    Predicate<Object> ALWAYS_FALSE = value -> false;
+
     default Predicate<A> and(Predicate<? super A> other) {
         return value -> apply(value) && other.apply(value);
     }
@@ -12,13 +15,5 @@ public interface Predicate<A> extends Function1<A, Boolean> {
 
     static <A> Predicate<A> not(Predicate<? super A> other) {
         return value -> !other.apply(value);
-    }
-
-    static <A> Predicate<A> alwaysTrue() {
-        return value -> true;
-    }
-
-    static <A> Predicate<A> alwaysFalse() {
-        return value -> false;
     }
 }

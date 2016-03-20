@@ -38,7 +38,8 @@ public class PredicateTest {
 
     @Test
     public void always() {
-        assertTrue(Predicate.alwaysTrue().apply(42));
-        assertFalse(Predicate.alwaysFalse().apply("hi!"));
+        assertTrue(Predicate.ALWAYS_TRUE.apply(42));
+        assertFalse(Predicate.ALWAYS_FALSE.apply("hi!"));
+        assertTrue(Predicate.ALWAYS_TRUE.or(Predicate.ALWAYS_FALSE).apply(5));
     }
 }
