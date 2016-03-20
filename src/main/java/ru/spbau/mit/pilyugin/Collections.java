@@ -35,18 +35,22 @@ public class Collections {
         return result;
     }
 
-    public static <A> List<A> takeUnless(Predicate<? super A> predicate, Iterable<? extends A> elements) {
-        return takeWhile(Predicate.not(predicate), elements);
+    public static <A> List<A> takeUnless(Predicate<? super A> predicate, Iterable<? extends A> iterable) {
+        return takeWhile(Predicate.not(predicate), iterable);
+    }
+
+    public static <A, R> R foldl(Function2<? super R, ? super A, ? extends R> function,
+                                 R initialValue, Iterable<? extends A> iterable) {
+        R result = initialValue;
+        for (A element : iterable) {
+            result = function.apply(result, element);
+        }
+        return result;
     }
 
     public static <A, R> R foldr(Function2<? super A, ? super R, ? extends R> function,
                                  R initialValue, Iterable<? extends A> iterable) {
         return processFoldr(function, initialValue, iterable.iterator());
-    }
-
-    public static <A, R> R foldl(Function2<? super R, ? super A, ? extends R> function,
-                                 R initialValue, Iterable<? extends A> iterable) {
-        return processFoldl(function, initialValue, iterable.iterator());
     }
 
     private static <A, R> R processFoldr(Function2<? super A, ? super R, ? extends R> function,
@@ -55,13 +59,5 @@ public class Collections {
             return initialValue;
         }
         return function.apply(iterator.next(), processFoldr(function, initialValue, iterator));
-    }
-
-    private static <A, R> R processFoldl(Function2<? super R, ? super A, ? extends R> function,
-                                         R initialValue, Iterator<? extends A> iterator) {
-        if (!iterator.hasNext()) {
-            return initialValue;
-        }
-        return processFoldl(function, function.apply(initialValue, iterator.next()), iterator);
     }
 }
