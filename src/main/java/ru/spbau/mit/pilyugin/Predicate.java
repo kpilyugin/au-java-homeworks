@@ -13,7 +13,7 @@ public interface Predicate<A> extends Function1<A, Boolean> {
         return value -> apply(value) || other.apply(value);
     }
 
-    static <A> Predicate<A> not(Predicate<? super A> other) {
-        return value -> !other.apply(value);
+    default Predicate<A> not() {
+        return value -> !apply(value);
     }
 }

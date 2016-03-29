@@ -36,7 +36,7 @@ public class Collections {
     }
 
     public static <A> List<A> takeUnless(Iterable<? extends A> iterable, Predicate<? super A> predicate) {
-        return takeWhile(iterable, Predicate.not(predicate));
+        return takeWhile(iterable, predicate.not());
     }
 
     public static <A, R> R foldl(Iterable<? extends A> iterable,
