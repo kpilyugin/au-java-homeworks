@@ -5,7 +5,7 @@ public interface Function2<A1, A2, R> {
     R apply(A1 arg1, A2 arg2);
 
     // g(f(x, y))
-    default <R1> Function2<A1, A2, R1> compose(Function1<? super R, ? extends R1> g) {
+    default <R1> Function2<A1, A2, R1> compose(Function1<? super R, R1> g) {
         return (arg1, arg2) -> g.apply(apply(arg1, arg2));
     }
 

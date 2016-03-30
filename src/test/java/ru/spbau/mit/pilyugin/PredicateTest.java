@@ -7,7 +7,11 @@ import static org.junit.Assert.*;
 public class PredicateTest {
 
     private static final Predicate<Integer> POSITIVE = value -> value > 0;
-    private static final Predicate<Integer> EVEN = value -> value % 2 == 0;
+    private static final Predicate<Number> EVEN = value -> value.intValue() % 2 == 0;
+
+    private static final Predicate<Object> CHECK_NOT_CALLED = value -> {
+        throw new RuntimeException("Not lazy evaluation");
+    };
 
     @Test
     public void and() {
@@ -23,33 +27,9 @@ public class PredicateTest {
     }
 
     @Test
-    public void lazyAnd() {
-        Predicate<Integer> shouldNotBeCalled = value -> {
-            throw new RuntimeException("not lazy evaluation");
-        };
-        assertFalse(EVEN.and(shouldNotBeCalled).apply(1));
-    }
-
-    @Test
-    public void lazyOr() {
-        Predicate<Integer> shouldNotBeCalled = value -> {
-            throw new RuntimeException("not lazy evaluation");
-        };
-        assertTrue(EVEN.or(shouldNotBeCalled).apply(0));
-    }
-
-    @Test
-    public void wildcardAnd() {
-        Predicate<Number> base = value -> value.intValue() == 0;
-        Predicate<Integer> derived = value -> value == 0;
-        assertTrue(derived.and(base).apply(0));
-    }
-
-    @Test
-    public void wildcardOr() {
-        Predicate<Number> base = value -> value.intValue() == 0;
-        Predicate<Integer> derived = value -> value == 5;
-        assertTrue(derived.or(base).apply(0));
+    public void lazy() {
+        assertTrue(EVEN.or(CHECK_NOT_CALLED).apply(0));
+        assertFalse(EVEN.and(CHECK_NOT_CALLED).apply(1));
     }
 
     @Test
