@@ -51,7 +51,7 @@ public class Collections {
         return processFoldr(iterable.iterator(), function, initialValue);
     }
 
-    private static <A, R> R processFoldr(Iterator<? extends A> iterator,
+    private static <A, R> R processFoldr(Iterator<A> iterator,
                                          Function2<? super A, ? super R, R> function,
                                          R initialValue) {
         if (!iterator.hasNext()) {
