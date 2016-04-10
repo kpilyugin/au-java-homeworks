@@ -86,6 +86,7 @@ public class SecondPartTasksTest {
             for (String str : content) {
                 writer.println(str);
             }
+            writer.flush();
         }
         return file.getPath();
     }
