@@ -16,7 +16,6 @@ import static org.junit.Assert.*;
 public class ThreadPoolTest {
 
     private static final int NUM_THREADS = 8;
-    private static final int DELAY_MS = 10;
 
     private ThreadPool threadPool;
 
@@ -33,7 +32,7 @@ public class ThreadPoolTest {
     @Test
     public void testSimpleTask() throws LightExecutionException {
         LightFuture<Integer> future = threadPool.submit(() -> {
-            delayExecution();
+            delayExecution(10);
             return IntStream.range(1, 5).reduce((a, b) -> a * b).orElse(0);
         });
         assertFalse(future.isReady());
@@ -52,11 +51,11 @@ public class ThreadPoolTest {
     @Test
     public void testAndThen() throws LightExecutionException {
         LightFuture<Integer> first = threadPool.submit(() -> {
-            delayExecution();
+            delayExecution(10);
             return 1;
         });
         LightFuture<Integer> second = first.thenApply(a -> {
-            delayExecution();
+            delayExecution(10);
             return a * 2;
         });
         LightFuture<Integer> third = second.thenApply(a -> a * 3);
@@ -99,6 +98,21 @@ public class ThreadPoolTest {
     }
 
     @Test
+    public void testLongWaitingTask() throws LightExecutionException {
+        for (int i = 0; i < NUM_THREADS - 1; i++) {
+            LightFuture<Void> waiting = threadPool.submit(() -> {
+                delayExecution(10000);
+                return null;
+            });
+            // all threads except one are waiting, add task depending on waiting task
+            waiting.thenApply(Function.identity());
+        }
+        LightFuture<Integer> task = threadPool.submit(() -> 3);
+        assertEquals(3, (int) task.get());
+        threadPool.shutdown();
+    }
+
+    @Test
     public void testThreadPoolSize() throws LightExecutionException {
         Set<Long> ids = new HashSet<>();
         List<LightFuture<Long>> futures = new ArrayList<>();
@@ -106,7 +120,7 @@ public class ThreadPoolTest {
         int numTasks = 50;
         for (int i = 0; i < numTasks; i++) {
             futures.add(threadPool.submit(() -> {
-                delayExecution();
+                delayExecution(10);
                 return Thread.currentThread().getId();
             }));
         }
@@ -116,11 +130,10 @@ public class ThreadPoolTest {
         assertEquals(NUM_THREADS, ids.size());
     }
 
-    private static void delayExecution() {
+    private static void delayExecution(long millis) {
         try {
-            Thread.sleep(DELAY_MS);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
+            Thread.sleep(millis);
+        } catch (InterruptedException ignored) {
         }
     }
 }
