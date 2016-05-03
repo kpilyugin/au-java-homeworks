@@ -10,7 +10,7 @@ import java.util.function.Supplier;
 public class ThreadPoolImpl implements ThreadPool {
 
     private final Thread[] threads;
-    private final Queue<AbstractTask<?>> tasks = new LinkedList<>();
+    private final Queue<Task<?>> tasks = new LinkedList<>();
 
     public ThreadPoolImpl(int numThreads) {
         threads = new Thread[numThreads];
@@ -23,7 +23,7 @@ public class ThreadPoolImpl implements ThreadPool {
 
     @Override
     public <R> LightFuture<R> submit(Supplier<R> supplier) {
-        return submitTask(new Task<>(supplier));
+        return submitTask(createTask(supplier));
     }
 
     @Override
@@ -33,7 +33,7 @@ public class ThreadPoolImpl implements ThreadPool {
         }
     }
 
-    private <R> AbstractTask<R> submitTask(AbstractTask<R> task) {
+    private <R> Task<R> submitTask(Task<R> task) {
         synchronized (tasks) {
             tasks.add(task);
             tasks.notify();
@@ -41,12 +41,30 @@ public class ThreadPoolImpl implements ThreadPool {
         return task;
     }
 
+    private <R> Task<R> createTask(Supplier<R> supplier) {
+        return new Task<R>() {
+            @Override
+            protected R computeResult() {
+                return supplier.get();
+            }
+        };
+    }
+
+    private <R, U> Task<U> createDependentTask(Task<R> parent, Function<? super R, ? extends U> function) {
+        return new Task<U>() {
+            @Override
+            protected U computeResult() throws LightExecutionException {
+                return function.apply(parent.get());
+            }
+        };
+    }
+
     private class Worker implements Runnable {
         @Override
         public void run() {
             try {
                 while (!Thread.currentThread().isInterrupted()) {
-                    AbstractTask<?> task;
+                    Task<?> task;
                     synchronized (tasks) {
                         while (tasks.isEmpty()) {
                             tasks.wait();
@@ -61,8 +79,8 @@ public class ThreadPoolImpl implements ThreadPool {
         }
     }
 
-    private abstract class AbstractTask<R> implements LightFuture<R> {
-        private final List<DependentTask<R, ?>> waitingTasks = new ArrayList<>();
+    private abstract class Task<R> implements LightFuture<R> {
+        private final List<Task<?>> waitingTasks = new ArrayList<>();
 
         private volatile boolean isReady = false;
         private R result;
@@ -94,7 +112,7 @@ public class ThreadPoolImpl implements ThreadPool {
 
         @Override
         public <U> LightFuture<U> thenApply(Function<? super R, ? extends U> f) {
-            DependentTask<R, U> task = new DependentTask<>(this, f);
+            Task<U> task = createDependentTask(this, f);
             if (isReady()) {
                 submitTask(task);
             } else {
@@ -126,33 +144,5 @@ public class ThreadPoolImpl implements ThreadPool {
         }
 
         protected abstract R computeResult() throws LightExecutionException;
-    }
-
-    private class Task<R> extends AbstractTask<R> {
-        private final Supplier<R> supplier;
-
-        public Task(Supplier<R> supplier) {
-            this.supplier = supplier;
-        }
-
-        @Override
-        protected R computeResult() {
-            return supplier.get();
-        }
-    }
-
-    private class DependentTask<R, U> extends AbstractTask<U> {
-        private final Function<? super R, ? extends U> function;
-        private final AbstractTask<R> parent;
-
-        DependentTask(AbstractTask<R> parent, Function<? super R, ? extends U> function) {
-            this.parent = parent;
-            this.function = function;
-        }
-
-        @Override
-        protected U computeResult() throws LightExecutionException {
-            return function.apply(parent.get());
-        }
     }
 }
