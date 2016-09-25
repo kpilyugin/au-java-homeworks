@@ -73,22 +73,21 @@ public class ContentManager {
 
         try {
             FileUtils.copyDirectory(new File(getRevisionPath(to)), new File(getRevisionPath(next)));
-            for (String name : filesFrom) {
+            for (String name : filesFrom) { // copy changed or new files to new revision
                 boolean changedFrom = !contentEquals(name, from, base);
                 if (changedFrom) {
-                    System.out.println("File " + name + "changed in from");
                     boolean changedTo = !contentEquals(name, to, base);
                     boolean differs = !contentEquals(name, from, base);
-                    System.out.println("changedTo = " + changedTo + ", differs = " + differs);
                     if (!changedTo) {
                         FileUtils.copyFile(new File(getRevisionPath(from) + name), new File(getRevisionPath(next) + name));
                     }
                     if (changedTo && differs) {
+                        // files are changed in both branches: need to resolve conflict
                         throw new VCSException("Merge conflict: file " + name + " differs");
                     }
                 }
             }
-            for (String name : filesBase) {
+            for (String name : filesBase) { // delete files, that were removed in branch we're merging from
                 if (filesFrom.contains(name)) {
                     continue;
                 }

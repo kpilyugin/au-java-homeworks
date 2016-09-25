@@ -125,6 +125,7 @@ public class VCS {
         int numFrom = merged.get().getRevision();
         Revision revisionFrom = getRevision(numFrom);
         Revision revisionTo = getCurrentRevision();
+        // looking for closest base revision, same for both branches
         while (revisionFrom.getNumber() != revisionTo.getNumber()) {
             if (revisionFrom.getNumber() > revisionTo.getNumber()) {
                 revisionFrom = getRevision(revisionFrom.getPrevious());
