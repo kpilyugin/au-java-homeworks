@@ -24,7 +24,6 @@ public class VCSMain {
                     executeCommand(line);
                 } catch (Exception e) {
                     System.out.println("Failed to execute command: " + e.getMessage());
-                    e.printStackTrace();
                 }
                 VCSSerializer.saveEnv(vcs, ENV_PATH);
             }
