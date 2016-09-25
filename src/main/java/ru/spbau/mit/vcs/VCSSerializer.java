@@ -1,26 +1,24 @@
-package ru.spbau.mit.vcs.context;
+package ru.spbau.mit.vcs;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import ru.spbau.mit.vcs.VCS;
 
 import java.io.*;
 
-public class VCSContextSerializer {
-    public static VCSContext readContext(String path) {
-        if (!new File(path).exists()) {
-            return new VCSContext();
-        }
+public class VCSSerializer {
+    public static VCS readEnv(String path) {
         Gson gson = new GsonBuilder().setPrettyPrinting().create();
 
         try (Reader reader = new FileReader(path)) {
-            return gson.fromJson(reader, VCSContext.class);
+            return gson.fromJson(reader, VCS.class);
         } catch (Exception e) {
             System.out.println("Failed reading data from json");
-            return new VCSContext();
+            return new VCS();
         }
     }
 
-    public static void saveContext(VCSContext context, String path) throws IOException {
+    public static void saveEnv(VCS context, String path) throws IOException {
         Gson gson = new Gson();
 
         try (PrintWriter writer = new PrintWriter(path)) {

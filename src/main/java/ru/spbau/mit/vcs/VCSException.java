@@ -1,4 +1,4 @@
-package ru.spbau.mit.vcs.exception;
+package ru.spbau.mit.vcs;
 
 public class VCSException extends Exception {
     public VCSException(String message) {

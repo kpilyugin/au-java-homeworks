@@ -2,13 +2,15 @@ package ru.spbau.mit.vcs.commands;
 
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
-import ru.spbau.mit.vcs.context.VCSContext;
-import ru.spbau.mit.vcs.exception.VCSException;
+import ru.spbau.mit.vcs.VCS;
+import ru.spbau.mit.vcs.VCSException;
 
+import java.io.IOException;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Parameters(commandDescription = "Print current branch, create or delete branch")
-public class Branch implements VCSCommand {
+public class Branch implements Command {
     @Parameter(description = "Branch name")
     private List<String> branchName;
 
@@ -19,21 +21,21 @@ public class Branch implements VCSCommand {
     private boolean all;
 
     @Override
-    public void execute(VCSContext context) throws VCSException {
+    public void execute(VCS vcs) throws VCSException, IOException {
         if (branchName == null) {
-            printBranch(context);
+            printBranch(vcs);
             return;
         }
-        String name = branchName.get(0);
+        String name = branchName.stream().collect(Collectors.joining(" "));
         if (delete) {
-            context.deleteBranch(name);
+            vcs.deleteBranch(name);
         } else {
-            context.createBranch(name);
-            context.checkout(name);
+            vcs.createBranch(name);
+            vcs.checkout(name);
         }
     }
 
-    private void printBranch(VCSContext context) {
+    private void printBranch(VCS context) {
         String current = context.getCurrentBranch().getName();
         if (all) {
             System.out.println("All branches: ");

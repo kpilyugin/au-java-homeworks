@@ -58,7 +58,7 @@
                         <manifest>
                             <addClasspath>true</addClasspath>
                             <classpathPrefix>lib/</classpathPrefix>
-                            <mainClass>ru.spbau.mit.vcs.Main</mainClass>
+                            <mainClass>ru.spbau.mit.vcs.VCSMain</mainClass>
                         </manifest>
                     </archive>
                 </configuration>
