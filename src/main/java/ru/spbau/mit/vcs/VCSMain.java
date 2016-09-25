@@ -11,9 +11,9 @@ import java.util.Scanner;
 public class VCSMain {
     private static final String ENV_PATH = VCS.FOLDER + "/env.json";
 
-    private VCS vcs;
+    private final VCS vcs;
 
-    public void run() throws IOException {
+    public VCSMain() throws IOException {
         initDirectory();
         CommandFactory.initCommander().usage();
         vcs = new File(ENV_PATH).exists() ? VCSSerializer.readEnv(ENV_PATH) : new VCS();
@@ -33,7 +33,7 @@ public class VCSMain {
     }
 
     public static void main(String[] args) throws IOException {
-        new VCSMain().run();
+        new VCSMain();
     }
 
     private boolean initDirectory() {
@@ -47,5 +47,4 @@ public class VCSMain {
         Command command = (Command) parsed.getObjects().get(0);
         command.execute(vcs);
     }
-
 }

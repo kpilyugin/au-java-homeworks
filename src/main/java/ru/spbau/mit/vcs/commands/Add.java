@@ -15,6 +15,6 @@ public class Add implements Command {
 
     @Override
     public void execute(VCS vcs) throws VCSException, IOException {
-        vcs.addTrackedFiles(files);
+        vcs.addFiles(files);
     }
 }

@@ -13,25 +13,26 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-public class Content {
-    private static final String WORKING_DIR = System.getProperty("user.dir");
+public class ContentManager {
+    private final String workingDir;
     private Set<String> trackedContent;
 
-    public Content() {
+    public ContentManager(String workingDir) {
+        this.workingDir = workingDir;
         trackedContent = new HashSet<>();
     }
 
-    public void addContent(List<String> paths) throws IOException {
+    public void addFiles(List<String> paths) throws IOException {
         for (String path : paths) {
             File file = new File(path);
             if (file.isDirectory()) {
                 Collection<File> files = FileUtils.listFiles(file, TrueFileFilter.INSTANCE, TrueFileFilter.INSTANCE);
                 for (File f : files) {
-                    String relativePath = getRelativePath(f, WORKING_DIR);
+                    String relativePath = getRelativePath(f, workingDir);
                     trackedContent.add(relativePath);
                 }
             } else {
-                String relativePath = getRelativePath(file, WORKING_DIR);
+                String relativePath = getRelativePath(file, workingDir);
                 trackedContent.add(relativePath);
             }
         }
@@ -40,8 +41,7 @@ public class Content {
     public void writeRevision(int revision) throws IOException {
         String revisionPath = getRevisionPath(revision);
         for (String file : trackedContent) {
-            System.out.println("Copying " + (WORKING_DIR + file) + " to " + (revisionPath + file));
-            File srcFile = new File(WORKING_DIR + file);
+            File srcFile = new File(workingDir + file);
             if (srcFile.exists()) {
                 FileUtils.copyFile(srcFile, new File(revisionPath + file));
             }
@@ -51,9 +51,15 @@ public class Content {
     public void checkoutRevision(int revision) throws IOException {
         String revisionPath = getRevisionPath(revision);
         File revisionDir = new File(revisionPath);
-        FileUtils.copyDirectory(revisionDir, new File(WORKING_DIR));
-        Collection<File> files = FileUtils.listFiles(revisionDir, TrueFileFilter.INSTANCE, TrueFileFilter.INSTANCE);
+        for (String name : trackedContent) {
+            FileUtils.deleteQuietly(new File(workingDir + name));
+        }
         trackedContent.clear();
+        if (!revisionDir.exists()) {
+            return;
+        }
+        FileUtils.copyDirectory(revisionDir, new File(workingDir));
+        Collection<File> files = FileUtils.listFiles(revisionDir, TrueFileFilter.INSTANCE, TrueFileFilter.INSTANCE);
         for (File file : files) {
             String relativePath = file.getAbsolutePath().substring(revisionPath.length());
             trackedContent.add(relativePath);
@@ -91,7 +97,6 @@ public class Content {
                 }
                 boolean changedTo = !contentEquals(name, to, base);
                 if (!changedTo) {
-                    System.out.println("deleting file " + name);
                     FileUtils.deleteQuietly(new File(getRevisionPath(next) + name));
                 }
             }
@@ -105,15 +110,15 @@ public class Content {
         return file.getAbsolutePath().substring(directory.length());
     }
 
-    private static String getRevisionPath(int revision) {
-        return String.format("%s/%s/%d", WORKING_DIR, VCS.FOLDER, revision);
+    private String getRevisionPath(int revision) {
+        return String.format("%s/%s/%d", workingDir, VCS.FOLDER, revision);
     }
 
-    private static boolean contentEquals(String name, int revision1, int revision2) throws IOException {
+    private boolean contentEquals(String name, int revision1, int revision2) throws IOException {
         return FileUtils.contentEquals(new File(getRevisionPath(revision1) + name), new File(getRevisionPath(revision2) + name));
     }
 
-    private static List<String> getRevisionFiles(int revision) {
+    private List<String> getRevisionFiles(int revision) {
         String revisionPath = getRevisionPath(revision);
         File directory = new File(revisionPath);
         return FileUtils.listFiles(directory, TrueFileFilter.INSTANCE, TrueFileFilter.INSTANCE)

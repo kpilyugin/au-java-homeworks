@@ -2,7 +2,6 @@ package ru.spbau.mit.vcs;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import ru.spbau.mit.vcs.VCS;
 
 import java.io.*;
 
@@ -18,11 +17,11 @@ public class VCSSerializer {
         }
     }
 
-    public static void saveEnv(VCS context, String path) throws IOException {
+    public static void saveEnv(VCS vcs, String path) throws IOException {
         Gson gson = new Gson();
 
         try (PrintWriter writer = new PrintWriter(path)) {
-            String json = gson.toJson(context);
+            String json = gson.toJson(vcs);
             writer.println(json);
         }
     }
