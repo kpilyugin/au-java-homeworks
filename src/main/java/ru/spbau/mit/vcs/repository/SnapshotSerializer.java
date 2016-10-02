@@ -17,7 +17,8 @@ public class SnapshotSerializer {
 
     public static void writeSnapshot(Snapshot snapshot, File file) throws IOException {
         Gson gson = new GsonBuilder().setPrettyPrinting().create();
-
+        //noinspection ResultOfMethodCallIgnored
+        file.getParentFile().mkdirs();
         try (PrintWriter writer = new PrintWriter(file)) {
             String json = gson.toJson(snapshot);
             writer.println(json);

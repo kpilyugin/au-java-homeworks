@@ -4,6 +4,7 @@ import org.apache.commons.io.filefilter.AbstractFileFilter;
 import org.apache.commons.io.filefilter.TrueFileFilter;
 import ru.spbau.mit.vcs.VCS;
 
+import javax.xml.bind.DatatypeConverter;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -27,7 +28,7 @@ public class FileUtil {
                     n = in.read(buffer);
                 }
             }
-            return new String(digest.digest());
+            return DatatypeConverter.printHexBinary(digest.digest());
         } catch (NoSuchAlgorithmException | IOException e) {
             throw new RuntimeException(e);
         }
@@ -40,5 +41,9 @@ public class FileUtil {
                 return !VCS.FOLDER.equals(name);
             }
         });
+    }
+
+    public static String getRelativePath(File file, String directory) {
+        return file.getAbsolutePath().substring(directory.length() + 1);
     }
 }

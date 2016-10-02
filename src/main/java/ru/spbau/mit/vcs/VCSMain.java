@@ -31,6 +31,7 @@ public class VCSMain {
                     executeCommand(line.split(" "));
                 } catch (Exception e) {
                     System.out.println("Failed to execute command: " + e.getMessage());
+                    e.printStackTrace();
                     CommandFactory.initCommander().usage();
                 }
                 if (vcs != null) {
@@ -71,7 +72,9 @@ public class VCSMain {
             if (vcs != null) {
                 throw new VCSException("VCS already initialized");
             }
-            initDirectory();
+            //noinspection ResultOfMethodCallIgnored
+            new File(VCS.FOLDER).mkdirs();
+            envFile = new File(VCS.FOLDER, ENV_FILE);
             vcs = new VCS();
         } else {
             if (vcs == null) {
@@ -81,7 +84,4 @@ public class VCSMain {
         }
     }
 
-    private static boolean initDirectory() {
-        return new File(VCS.FOLDER).mkdirs();
-    }
 }

@@ -1,12 +1,15 @@
 package ru.spbau.mit.vcs.repository;
 
 import org.apache.commons.io.FileUtils;
+import ru.spbau.mit.vcs.VCS;
 import ru.spbau.mit.vcs.VCSException;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.*;
 import java.util.function.Consumer;
+
+import static ru.spbau.mit.vcs.repository.FileUtil.getRelativePath;
 
 public class Repository {
     private final String workingDir;
@@ -22,6 +25,23 @@ public class Repository {
 
     public void removeFiles(List<String> paths) throws IOException {
         processFiles(paths, this::removeFile);
+    }
+
+    public void clean() {
+        Snapshot snapshot = getCurrentSnapshot();
+        snapshot.keySet().stream()
+                .filter(file -> !trackedFiles.contains(file))
+                .forEach(file -> FileUtils.deleteQuietly(new File(workingDir, file)));
+    }
+
+    public void resetFile(String file, int revision) throws IOException {
+        Snapshot snapshot = getSnapshot(revision);
+        if (!snapshot.contains(file)) {
+            trackedFiles.remove(file);
+        } else {
+            String hash = snapshot.get(file);
+            FileUtils.copyFile(new File(getDataDirectory(), hash), new File(workingDir, file));
+        }
     }
 
     private void processFiles(List<String> paths, Consumer<File> consumer) {
@@ -78,7 +98,11 @@ public class Repository {
     }
 
     public void checkoutRevision(int revision) throws IOException {
+        for (String file : trackedFiles) {
+            FileUtils.deleteQuietly(new File(workingDir, file));
+        }
         Snapshot snapshot = SnapshotSerializer.readSnapshot(getSnapshotFile(revision));
+        trackedFiles.clear();
         trackedFiles.addAll(snapshot.keySet());
         for (String file : trackedFiles) {
             String hash = snapshot.get(file);
@@ -126,15 +150,15 @@ public class Repository {
         return trackedFiles;
     }
 
+    private File getVCSDirectory() {
+        return new File(workingDir, VCS.FOLDER);
+    }
+
     private File getSnapshotFile(int revision) {
-        return new File(workingDir, String.valueOf(revision) + ".json");
+        return new File(getVCSDirectory(), String.valueOf(revision) + ".json");
     }
 
     private File getDataDirectory() {
-        return new File(workingDir, "data");
-    }
-
-    private static String getRelativePath(File file, String directory) {
-        return file.getAbsolutePath().substring(directory.length() + 1);
+        return new File(getVCSDirectory(), "data");
     }
 }

@@ -10,6 +10,6 @@ import java.io.IOException;
 public class Clean implements Command {
     @Override
     public void execute(VCS vcs) throws VCSException, IOException {
-
+        vcs.getRepository().clean();
     }
 }

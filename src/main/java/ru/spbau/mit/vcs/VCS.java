@@ -23,8 +23,13 @@ public class VCS {
     }
 
     public VCS(String workingDir) {
-        this(new Branch(DEFAULT_BRANCH, 0), 0, new HashSet<>(), new HashMap<>(), new Repository(workingDir), 1);
+        this(new Branch(DEFAULT_BRANCH, 0), 0, new HashSet<>(), new HashMap<>(), new Repository(workingDir), 0);
         branches.add(currentBranch);
+        try {
+            commit("Initial commit");
+        } catch (VCSException | IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public VCS(Branch currentBranch, int currentRevision, Set<Branch> branches,

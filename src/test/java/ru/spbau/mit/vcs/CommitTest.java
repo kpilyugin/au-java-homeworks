@@ -35,10 +35,5 @@ public class CommitTest {
         Revision revision = vcs.getCurrentRevision();
         assertEquals("1", revision.getCommitMessage());
         assertEquals(1, revision.getNumber());
-
-        String resultPath = folder.getRoot().getAbsolutePath() + "/" + VCS.FOLDER + "/1/1";
-        File resultFile = new File(resultPath);
-        Assert.assertTrue(resultFile.exists());
-        Assert.assertTrue(FileUtils.contentEquals(file, resultFile));
     }
 }
