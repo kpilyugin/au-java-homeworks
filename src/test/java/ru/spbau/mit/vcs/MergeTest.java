@@ -9,21 +9,9 @@ import org.junit.rules.TemporaryFolder;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 
-public class MergeTest {
-
-    private VCS vcs;
-
-    @Rule
-    public final TemporaryFolder folder = new TemporaryFolder();
-
-    @Before
-    public void setUp() {
-        vcs = new VCS(folder.getRoot().getAbsolutePath());
-    }
+public class MergeTest extends VCSTest {
 
     @Test
     public void testMerge() throws IOException, VCSException {
@@ -32,7 +20,7 @@ public class MergeTest {
         File file2 = folder.newFile("2");
         String initial = "initial 2";
         FileUtils.writeStringToFile(file2, initial);
-        vcs.getRepository().addFiles(Arrays.asList(file1.getAbsolutePath(), file2.getAbsolutePath()));
+        vcs.getRepository().addFiles(file1.getAbsolutePath(), file2.getAbsolutePath());
         vcs.commit("1");
 
         vcs.createBranch("branch");
@@ -40,7 +28,7 @@ public class MergeTest {
         FileUtils.writeStringToFile(file2, changed);
         FileUtils.deleteQuietly(file1);
         File file3 = folder.newFile("3");
-        vcs.getRepository().addFiles(Collections.singletonList(file3.getAbsolutePath()));
+        vcs.getRepository().addFiles(file3.getAbsolutePath());
         vcs.commit("2");
 
         vcs.checkout("master");
@@ -63,7 +51,7 @@ public class MergeTest {
         File file = folder.newFile("1");
         FileUtils.writeStringToFile(file, "initial 1");
 
-        vcs.getRepository().addFiles(Collections.singletonList(file.getAbsolutePath()));
+        vcs.getRepository().addFiles(file.getAbsolutePath());
         vcs.commit("1");
 
         vcs.createBranch("branch");

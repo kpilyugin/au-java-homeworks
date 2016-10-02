@@ -17,6 +17,7 @@ public class CommandFactory {
         commander.addCommand("clean", new Clean());
         commander.addCommand("reset", new Reset());
         commander.addCommand("rm", new Remove());
+        commander.addCommand("help", new Help());
         return commander;
     }
 }

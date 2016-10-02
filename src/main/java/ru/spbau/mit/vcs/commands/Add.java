@@ -15,6 +15,6 @@ public class Add implements Command {
 
     @Override
     public void execute(VCS vcs) throws VCSException, IOException {
-        vcs.getRepository().addFiles(files);
+        vcs.getRepository().addFiles(files.toArray(new String[files.size()]));
     }
 }

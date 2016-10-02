@@ -6,14 +6,11 @@ import com.google.gson.GsonBuilder;
 import java.io.*;
 
 public class VCSSerializer {
-    public static VCS readEnv(File file) {
+    public static VCS readEnv(File file) throws IOException {
         Gson gson = new Gson();
 
         try (Reader reader = new FileReader(file)) {
             return gson.fromJson(reader, VCS.class);
-        } catch (Exception e) {
-            System.out.println("Failed reading env from json");
-            return new VCS();
         }
     }
 

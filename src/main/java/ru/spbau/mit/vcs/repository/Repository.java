@@ -11,6 +11,10 @@ import java.util.function.Consumer;
 
 import static ru.spbau.mit.vcs.repository.FileUtil.getRelativePath;
 
+/**
+ * For each revision, snapshot of all files is stored.
+ * Data files are stored uniquely using SHA1-hash of file content.
+ */
 public class Repository {
     private final String workingDir;
     private final Set<String> trackedFiles = new HashSet<>();
@@ -19,11 +23,11 @@ public class Repository {
         this.workingDir = workingDir;
     }
 
-    public void addFiles(List<String> paths) throws IOException {
+    public void addFiles(String... paths) throws IOException {
         processFiles(paths, this::addFile);
     }
 
-    public void removeFiles(List<String> paths) throws IOException {
+    public void removeFiles(String... paths) throws IOException {
         processFiles(paths, this::removeFile);
     }
 
@@ -44,7 +48,7 @@ public class Repository {
         }
     }
 
-    private void processFiles(List<String> paths, Consumer<File> consumer) {
+    private void processFiles(String[] paths, Consumer<File> consumer) {
         for (String path : paths) {
             File file = new File(path);
             if (file.isDirectory()) {
@@ -81,6 +85,10 @@ public class Repository {
         return SnapshotSerializer.readSnapshot(file);
     }
 
+    /**
+     * Snapshot file is saved to file 'revision_num.json'.
+     * All files which content was changed or added are stored in 'data' folder.
+     */
     public void writeRevision(int revision) throws IOException {
         Snapshot snapshot = new Snapshot();
         for (String file : trackedFiles) {

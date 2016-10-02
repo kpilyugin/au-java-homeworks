@@ -15,6 +15,6 @@ public class Remove implements Command {
 
     @Override
     public void execute(VCS vcs) throws VCSException, IOException {
-        vcs.getRepository().removeFiles(files);
+        vcs.getRepository().removeFiles(files.toArray(new String[files.size()]));
     }
 }

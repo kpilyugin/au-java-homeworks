@@ -25,11 +25,6 @@ public class VCS {
     public VCS(String workingDir) {
         this(new Branch(DEFAULT_BRANCH, 0), 0, new HashSet<>(), new HashMap<>(), new Repository(workingDir), 0);
         branches.add(currentBranch);
-        try {
-            commit("Initial commit");
-        } catch (VCSException | IOException e) {
-            throw new RuntimeException(e);
-        }
     }
 
     public VCS(Branch currentBranch, int currentRevision, Set<Branch> branches,
@@ -93,7 +88,7 @@ public class VCS {
             throw new VCSException("No tracked branch for commit");
         }
         int number = addRevision(message);
-        System.out.println("Committed revision " + number);
+        System.out.println("Committed revision " + number + " to branch " + currentBranch.getName());
         repository.writeRevision(number);
     }
 
@@ -119,6 +114,10 @@ public class VCS {
         return repository;
     }
 
+    /**
+     * This method finds base revision, containing in both merging-from and merging-to revisions,
+     * to apply three-way merge algorithm.
+     */
     public void merge(String branch, String message) throws VCSException, IOException {
         if (currentBranch == null) {
             throw new VCSException("No tracked branch for merge");
@@ -130,7 +129,6 @@ public class VCS {
         int numFrom = merged.get().getRevision();
         Revision revisionFrom = getRevision(numFrom);
         Revision revisionTo = getCurrentRevision();
-        // looking for closest base revision, same for both branches
         while (revisionFrom.getNumber() != revisionTo.getNumber()) {
             if (revisionFrom.getNumber() > revisionTo.getNumber()) {
                 revisionFrom = getRevision(revisionFrom.getPrevious());

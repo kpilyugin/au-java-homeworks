@@ -4,6 +4,9 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
+/**
+ * All files for revision with corresponding SHA1-hashes.
+ */
 public class Snapshot {
     private final Map<String, String> contentMap = new HashMap<>();
 

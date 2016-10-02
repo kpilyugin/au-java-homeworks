@@ -32,7 +32,6 @@ public class VCSMain {
                 } catch (Exception e) {
                     System.out.println("Failed to execute command: " + e.getMessage());
                     e.printStackTrace();
-                    CommandFactory.initCommander().usage();
                 }
                 if (vcs != null) {
                     VCSSerializer.saveEnv(vcs, envFile);
@@ -48,7 +47,7 @@ public class VCSMain {
         new VCSMain(args);
     }
 
-    private VCS readEnvFromFile() {
+    private VCS readEnvFromFile() throws IOException {
         File parentDir = new File(".");
         File vcsDir = new File(parentDir, VCS.FOLDER);
         while (!vcsDir.exists()) {
@@ -76,6 +75,7 @@ public class VCSMain {
             new File(VCS.FOLDER).mkdirs();
             envFile = new File(VCS.FOLDER, ENV_FILE);
             vcs = new VCS();
+            vcs.commit("Initial commit");
         } else {
             if (vcs == null) {
                 throw new VCSException("VCS not initialized");

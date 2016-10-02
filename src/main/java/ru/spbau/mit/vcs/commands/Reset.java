@@ -4,7 +4,6 @@ import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
 import ru.spbau.mit.vcs.VCS;
 import ru.spbau.mit.vcs.VCSException;
-import ru.spbau.mit.vcs.repository.Snapshot;
 
 import java.io.IOException;
 import java.util.List;
