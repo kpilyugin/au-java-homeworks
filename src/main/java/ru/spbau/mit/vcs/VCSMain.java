@@ -1,13 +1,12 @@
 package ru.spbau.mit.vcs;
 
 import com.beust.jcommander.JCommander;
-import ru.spbau.mit.vcs.commands.CommandFactory;
 import ru.spbau.mit.vcs.commands.Command;
+import ru.spbau.mit.vcs.commands.CommandFactory;
 import ru.spbau.mit.vcs.commands.Init;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Scanner;
 
 public class VCSMain {
     private static final String ENV_FILE = "env.json";
@@ -17,26 +16,11 @@ public class VCSMain {
 
     public VCSMain(String[] args) throws IOException {
         vcs = readEnvFromFile();
-        if (args.length > 0) {
-            try {
-                executeCommand(args);
-            } catch (Exception e) {
-                System.out.println("Failed to execute command: " + e + " " + e.getMessage());
-            }
-        }
-        try (Scanner scanner = new Scanner(System.in)) {
-            while (scanner.hasNextLine()) {
-                String line = scanner.nextLine();
-                try {
-                    executeCommand(line.split(" "));
-                } catch (Exception e) {
-                    System.out.println("Failed to execute command: " + e.getMessage());
-                    e.printStackTrace();
-                }
-                if (vcs != null) {
-                    VCSSerializer.saveEnv(vcs, envFile);
-                }
-            }
+        try {
+            executeCommand(args);
+        } catch (Exception e) {
+            System.out.println("Failed to execute command: ");
+            e.printStackTrace();
         }
         if (vcs != null) {
             VCSSerializer.saveEnv(vcs, envFile);
@@ -71,11 +55,7 @@ public class VCSMain {
             if (vcs != null) {
                 throw new VCSException("VCS already initialized");
             }
-            //noinspection ResultOfMethodCallIgnored
-            new File(VCS.FOLDER).mkdirs();
-            envFile = new File(VCS.FOLDER, ENV_FILE);
-            vcs = new VCS();
-            vcs.commit("Initial commit");
+            initialize();
         } else {
             if (vcs == null) {
                 throw new VCSException("VCS not initialized");
@@ -84,4 +64,11 @@ public class VCSMain {
         }
     }
 
+    private void initialize() throws IOException, VCSException {
+        //noinspection ResultOfMethodCallIgnored
+        new File(VCS.FOLDER).mkdirs();
+        envFile = new File(VCS.FOLDER, ENV_FILE);
+        vcs = new VCS();
+        vcs.commit("Initial commit");
+    }
 }
