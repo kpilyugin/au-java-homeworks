@@ -1,26 +1,19 @@
 package ru.spbau.mit.vcs.repository;
 
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.filefilter.TrueFileFilter;
-import ru.spbau.mit.vcs.VCS;
 import ru.spbau.mit.vcs.VCSException;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
 
 public class Repository {
     private final String workingDir;
-    private Set<String> trackedContent;
+    private final Set<String> trackedFiles = new HashSet<>();
 
     public Repository(String workingDir) {
         this.workingDir = workingDir;
-        trackedContent = new HashSet<>();
     }
 
     public void addFiles(List<String> paths) throws IOException {
@@ -35,8 +28,7 @@ public class Repository {
         for (String path : paths) {
             File file = new File(path);
             if (file.isDirectory()) {
-                Collection<File> files = FileUtils.listFiles(file, TrueFileFilter.INSTANCE, TrueFileFilter.INSTANCE);
-                files.forEach(consumer);
+                FileUtil.listExternalFiles(file).forEach(consumer);
             } else {
                 consumer.accept(file);
             }
@@ -45,109 +37,104 @@ public class Repository {
 
     private void addFile(File file) {
         String relativePath = getRelativePath(file, workingDir);
-        trackedContent.add(relativePath);
+        trackedFiles.add(relativePath);
     }
 
     private void removeFile(File file) {
         String relativePath = getRelativePath(file, workingDir);
-        trackedContent.remove(relativePath);
+        trackedFiles.remove(relativePath);
         FileUtils.deleteQuietly(file);
     }
 
-    public Snapshot makeSnapshot() {
-        Collection<File> allFiles = FileUtil.listExternalFiles(workingDir);
+    public Snapshot getCurrentSnapshot() {
+        Collection<File> allFiles = FileUtil.listExternalFiles(new File(workingDir));
         Snapshot snapshot = new Snapshot();
         allFiles.forEach(file -> {
             String relativePath = getRelativePath(file, workingDir);
+            snapshot.addFile(relativePath, FileUtil.calculateSha1(file));
         });
-        return new Snapshot();
+        return snapshot;
+    }
+
+    public Snapshot getSnapshot(int revision) throws IOException {
+        File file = getSnapshotFile(revision);
+        return SnapshotSerializer.readSnapshot(file);
     }
 
     public void writeRevision(int revision) throws IOException {
-        String revisionPath = getRevisionPath(revision);
-        for (String file : trackedContent) {
-            File srcFile = new File(workingDir + file);
+        Snapshot snapshot = new Snapshot();
+        for (String file : trackedFiles) {
+            File srcFile = new File(workingDir, file);
             if (srcFile.exists()) {
-                FileUtils.copyFile(srcFile, new File(revisionPath + file));
+                String hash = FileUtil.calculateSha1(srcFile);
+                snapshot.addFile(file, hash);
+                File dataFile = new File(getDataDirectory(), hash);
+                if (!dataFile.exists()) {
+                    FileUtils.copyFile(srcFile, dataFile);
+                }
             }
         }
+        SnapshotSerializer.writeSnapshot(snapshot, getSnapshotFile(revision));
     }
 
     public void checkoutRevision(int revision) throws IOException {
-        String revisionPath = getRevisionPath(revision);
-        File revisionDir = new File(revisionPath);
-        for (String name : trackedContent) {
-            FileUtils.deleteQuietly(new File(workingDir + name));
-        }
-        trackedContent.clear();
-        if (!revisionDir.exists()) {
-            return;
-        }
-        FileUtils.copyDirectory(revisionDir, new File(workingDir));
-        Collection<File> files = FileUtils.listFiles(revisionDir, TrueFileFilter.INSTANCE, TrueFileFilter.INSTANCE);
-        for (File file : files) {
-            String relativePath = file.getAbsolutePath().substring(revisionPath.length());
-            trackedContent.add(relativePath);
+        Snapshot snapshot = SnapshotSerializer.readSnapshot(getSnapshotFile(revision));
+        trackedFiles.addAll(snapshot.keySet());
+        for (String file : trackedFiles) {
+            String hash = snapshot.get(file);
+            FileUtils.copyFile(new File(getDataDirectory(), hash), new File(workingDir, file));
         }
     }
 
-    public void merge(int from, int to, int base, int next) throws VCSException, IOException {
-        List<String> filesFrom = getRevisionFiles(from);
-        List<String> filesTo = getRevisionFiles(to);
-        List<String> filesBase = getRevisionFiles(base);
+    /**
+     * Three-way merge algorithm: if only one revision is changed comparing to base (or both changes are equal),
+     * then this change is applied, elsewise, there is a conflict that needs to be resolved.
+     */
+    public void merge(int fromRevision, int toRevision, int baseRevision, int next) throws VCSException, IOException {
+        Snapshot from = getSnapshot(fromRevision);
+        Snapshot to = getSnapshot(toRevision);
+        Snapshot base = getSnapshot(baseRevision);
 
-        try {
-            FileUtils.copyDirectory(new File(getRevisionPath(to)), new File(getRevisionPath(next)));
-            for (String name : filesFrom) { // copy changed or new files to new revision
-                boolean changedFrom = !contentEquals(name, from, base);
-                if (changedFrom) {
-                    boolean changedTo = !contentEquals(name, to, base);
-                    boolean differs = !contentEquals(name, from, base);
-                    if (!changedTo) {
-                        FileUtils.copyFile(new File(getRevisionPath(from) + name), new File(getRevisionPath(next) + name));
-                    }
-                    if (changedTo && differs) {
-                        // files are changed in both branches: need to resolve conflict
-                        throw new VCSException("Merge conflict: file " + name + " differs");
-                    }
-                }
+        Set<String> allFiles = new HashSet<>();
+        allFiles.addAll(from.keySet());
+        allFiles.addAll(to.keySet());
+        allFiles.addAll(base.keySet());
+
+        Snapshot result = new Snapshot();
+        for (String file : allFiles) {
+            boolean changedTo = !Objects.equals(to.get(file), base.get(file));
+            boolean changedFrom = !Objects.equals(from.get(file), base.get(file));
+            boolean changeDiffers = !Objects.equals(from.get(file), to.get(file));
+
+            if (changedTo && changedFrom && changeDiffers) {
+                throw new VCSException("Merge conflict: file " + file + " differs");
             }
-            for (String name : filesBase) { // delete files, that were removed in branch we're merging from
-                if (filesFrom.contains(name)) {
-                    continue;
+            if (changedFrom) { // changed or deleted
+                if (from.contains(file)) {
+                    result.addFile(file, from.get(file));
                 }
-                if (!filesTo.contains(name)) {
-                    continue;
-                }
-                boolean changedTo = !contentEquals(name, to, base);
-                if (!changedTo) {
-                    FileUtils.deleteQuietly(new File(getRevisionPath(next) + name));
-                }
+                continue;
             }
-        } catch (VCSException | IOException e) {
-            FileUtils.deleteDirectory(new File(getRevisionPath(next)));
-            throw e;
+            if (to.contains(file)) {
+                result.addFile(file, to.get(file));
+            }
         }
+        SnapshotSerializer.writeSnapshot(result, getSnapshotFile(next));
+    }
+
+    public Set<String> getTrackedFiles() {
+        return trackedFiles;
+    }
+
+    private File getSnapshotFile(int revision) {
+        return new File(workingDir, String.valueOf(revision) + ".json");
+    }
+
+    private File getDataDirectory() {
+        return new File(workingDir, "data");
     }
 
     private static String getRelativePath(File file, String directory) {
         return file.getAbsolutePath().substring(directory.length() + 1);
-    }
-
-    private String getRevisionPath(int revision) {
-        return String.format("%s/%s/%d", workingDir, VCS.FOLDER, revision);
-    }
-
-    private boolean contentEquals(String name, int revision1, int revision2) throws IOException {
-        return FileUtils.contentEquals(new File(getRevisionPath(revision1) + name), new File(getRevisionPath(revision2) + name));
-    }
-
-    private List<String> getRevisionFiles(int revision) {
-        String revisionPath = getRevisionPath(revision);
-        File directory = new File(revisionPath);
-        return FileUtils.listFiles(directory, TrueFileFilter.INSTANCE, TrueFileFilter.INSTANCE)
-                .stream()
-                .map(file -> getRelativePath(file, revisionPath))
-                .collect(Collectors.toList());
     }
 }

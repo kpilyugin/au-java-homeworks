@@ -12,7 +12,7 @@ public class VCSSerializer {
         try (Reader reader = new FileReader(file)) {
             return gson.fromJson(reader, VCS.class);
         } catch (Exception e) {
-            System.out.println("Failed reading data from json");
+            System.out.println("Failed reading env from json");
             return new VCS();
         }
     }

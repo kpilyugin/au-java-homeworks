@@ -16,7 +16,7 @@ import static org.apache.commons.io.FileUtils.listFiles;
 
 public class FileUtil {
 
-    public static String calculateSha1(File file) throws IOException {
+    public static String calculateSha1(File file) {
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-1");
             try (InputStream in = new FileInputStream(file)) {
@@ -28,13 +28,13 @@ public class FileUtil {
                 }
             }
             return new String(digest.digest());
-        } catch (NoSuchAlgorithmException e) {
+        } catch (NoSuchAlgorithmException | IOException e) {
             throw new RuntimeException(e);
         }
     }
 
-    public static Collection<File> listExternalFiles(String directory) {
-        return listFiles(new File(directory), TrueFileFilter.INSTANCE, new AbstractFileFilter() {
+    public static Collection<File> listExternalFiles(File directory) {
+        return listFiles(directory, TrueFileFilter.INSTANCE, new AbstractFileFilter() {
             @Override
             public boolean accept(File dir, String name) {
                 return !VCS.FOLDER.equals(name);
