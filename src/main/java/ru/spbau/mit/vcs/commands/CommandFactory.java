@@ -12,6 +12,11 @@ public class CommandFactory {
         commander.addCommand("branch", new Branch());
         commander.addCommand("log", new Log());
         commander.addCommand("merge", new Merge());
+        commander.addCommand("init", new Init());
+        commander.addCommand("status", new Status());
+        commander.addCommand("clean", new Clean());
+        commander.addCommand("reset", new Reset());
+        commander.addCommand("rm", new Remove());
         return commander;
     }
 }

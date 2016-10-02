@@ -1,4 +1,4 @@
-package ru.spbau.mit.vcs.revision;
+package ru.spbau.mit.vcs.repository;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.filefilter.TrueFileFilter;
@@ -11,31 +11,56 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
-public class ContentManager {
+public class Repository {
     private final String workingDir;
     private Set<String> trackedContent;
 
-    public ContentManager(String workingDir) {
+    public Repository(String workingDir) {
         this.workingDir = workingDir;
         trackedContent = new HashSet<>();
     }
 
     public void addFiles(List<String> paths) throws IOException {
+        processFiles(paths, this::addFile);
+    }
+
+    public void removeFiles(List<String> paths) throws IOException {
+        processFiles(paths, this::removeFile);
+    }
+
+    private void processFiles(List<String> paths, Consumer<File> consumer) {
         for (String path : paths) {
             File file = new File(path);
             if (file.isDirectory()) {
                 Collection<File> files = FileUtils.listFiles(file, TrueFileFilter.INSTANCE, TrueFileFilter.INSTANCE);
-                for (File f : files) {
-                    String relativePath = getRelativePath(f, workingDir);
-                    trackedContent.add(relativePath);
-                }
+                files.forEach(consumer);
             } else {
-                String relativePath = getRelativePath(file, workingDir);
-                trackedContent.add(relativePath);
+                consumer.accept(file);
             }
         }
+    }
+
+    private void addFile(File file) {
+        String relativePath = getRelativePath(file, workingDir);
+        trackedContent.add(relativePath);
+    }
+
+    private void removeFile(File file) {
+        String relativePath = getRelativePath(file, workingDir);
+        trackedContent.remove(relativePath);
+        FileUtils.deleteQuietly(file);
+    }
+
+    public Snapshot makeSnapshot() {
+        Collection<File> allFiles = FileUtil.listExternalFiles(workingDir);
+        Snapshot snapshot = new Snapshot();
+        allFiles.forEach(file -> {
+            String relativePath = getRelativePath(file, workingDir);
+        });
+        return new Snapshot();
     }
 
     public void writeRevision(int revision) throws IOException {
@@ -106,7 +131,7 @@ public class ContentManager {
     }
 
     private static String getRelativePath(File file, String directory) {
-        return file.getAbsolutePath().substring(directory.length());
+        return file.getAbsolutePath().substring(directory.length() + 1);
     }
 
     private String getRevisionPath(int revision) {

@@ -3,47 +3,85 @@ package ru.spbau.mit.vcs;
 import com.beust.jcommander.JCommander;
 import ru.spbau.mit.vcs.commands.CommandFactory;
 import ru.spbau.mit.vcs.commands.Command;
+import ru.spbau.mit.vcs.commands.Init;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.Scanner;
 
 public class VCSMain {
-    private static final String ENV_PATH = VCS.FOLDER + "/env.json";
+    private static final String ENV_FILE = "env.json";
 
-    private final VCS vcs;
+    private File envFile;
+    private VCS vcs;
 
-    public VCSMain() throws IOException {
-        initDirectory();
-        CommandFactory.initCommander().usage();
-        vcs = new File(ENV_PATH).exists() ? VCSSerializer.readEnv(ENV_PATH) : new VCS();
+    public VCSMain(String[] args) throws IOException {
+        vcs = readEnvFromFile();
+        if (args.length > 0) {
+            try {
+                executeCommand(args);
+            } catch (Exception e) {
+                System.out.println("Failed to execute command: " + e + " " + e.getMessage());
+            }
+        }
         try (Scanner scanner = new Scanner(System.in)) {
             while (scanner.hasNextLine()) {
                 String line = scanner.nextLine();
                 try {
-                    executeCommand(line);
+                    executeCommand(line.split(" "));
                 } catch (Exception e) {
                     System.out.println("Failed to execute command: " + e.getMessage());
+                    CommandFactory.initCommander().usage();
                 }
-                VCSSerializer.saveEnv(vcs, ENV_PATH);
+                if (vcs != null) {
+                    VCSSerializer.saveEnv(vcs, envFile);
+                }
             }
         }
-        VCSSerializer.saveEnv(vcs, ENV_PATH);
+        if (vcs != null) {
+            VCSSerializer.saveEnv(vcs, envFile);
+        }
     }
 
     public static void main(String[] args) throws IOException {
-        new VCSMain();
+        new VCSMain(args);
     }
 
-    private boolean initDirectory() {
-        return new File(VCS.FOLDER).mkdirs();
+    private VCS readEnvFromFile() {
+        File parentDir = new File(".");
+        File vcsDir = new File(parentDir, VCS.FOLDER);
+        while (!vcsDir.exists()) {
+            String parent = parentDir.getParent();
+            if (parent == null) {
+                return null;
+            }
+            parentDir = new File(parent);
+            vcsDir = new File(parentDir, VCS.FOLDER);
+        }
+        envFile = new File(vcsDir, ENV_FILE);
+        return VCSSerializer.readEnv(envFile);
     }
 
-    private void executeCommand(String line) throws VCSException, IOException {
+    private void executeCommand(String[] args) throws VCSException, IOException {
         JCommander commander = CommandFactory.initCommander();
-        commander.parse(line.split(" "));
+        commander.parse(args);
         JCommander parsed = commander.getCommands().get(commander.getParsedCommand());
         Command command = (Command) parsed.getObjects().get(0);
-        command.execute(vcs);
+        if (command instanceof Init) {
+            if (vcs != null) {
+                throw new VCSException("VCS already initialized");
+            }
+            initDirectory();
+            vcs = new VCS();
+        } else {
+            if (vcs == null) {
+                throw new VCSException("VCS not initialized");
+            }
+            command.execute(vcs);
+        }
+    }
+
+    private static boolean initDirectory() {
+        return new File(VCS.FOLDER).mkdirs();
     }
 }

@@ -26,13 +26,13 @@ public class CheckoutTest {
     public void testCheckout() throws IOException, VCSException {
         File file1 = folder.newFile("1");
         vcs.createBranch("branch1");
-        vcs.addFiles(Collections.singletonList(file1.getAbsolutePath()));
+        vcs.getRepository().addFiles(Collections.singletonList(file1.getAbsolutePath()));
         vcs.commit("1");
 
         vcs.checkout("master");
         File file2 = folder.newFile("2");
         vcs.createBranch("branch2");
-        vcs.addFiles(Collections.singletonList(file2.getAbsolutePath()));
+        vcs.getRepository().addFiles(Collections.singletonList(file2.getAbsolutePath()));
         vcs.commit("2");
 
         vcs.checkout("master");

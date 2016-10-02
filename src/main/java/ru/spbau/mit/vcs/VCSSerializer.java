@@ -6,10 +6,10 @@ import com.google.gson.GsonBuilder;
 import java.io.*;
 
 public class VCSSerializer {
-    public static VCS readEnv(String path) {
-        Gson gson = new GsonBuilder().setPrettyPrinting().create();
+    public static VCS readEnv(File file) {
+        Gson gson = new Gson();
 
-        try (Reader reader = new FileReader(path)) {
+        try (Reader reader = new FileReader(file)) {
             return gson.fromJson(reader, VCS.class);
         } catch (Exception e) {
             System.out.println("Failed reading data from json");
@@ -17,10 +17,10 @@ public class VCSSerializer {
         }
     }
 
-    public static void saveEnv(VCS vcs, String path) throws IOException {
-        Gson gson = new Gson();
+    public static void saveEnv(VCS vcs, File file) throws IOException {
+        Gson gson = new GsonBuilder().setPrettyPrinting().create();
 
-        try (PrintWriter writer = new PrintWriter(path)) {
+        try (PrintWriter writer = new PrintWriter(file)) {
             String json = gson.toJson(vcs);
             writer.println(json);
         }

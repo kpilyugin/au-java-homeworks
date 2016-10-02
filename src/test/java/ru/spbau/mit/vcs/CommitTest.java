@@ -30,7 +30,7 @@ public class CommitTest {
     public void testCommit() throws IOException, VCSException {
         File file = folder.newFile("1");
         FileUtils.writeStringToFile(file, "sample");
-        vcs.addFiles(Collections.singletonList(file.getAbsolutePath()));
+        vcs.getRepository().addFiles(Collections.singletonList(file.getAbsolutePath()));
         vcs.commit("1");
         Revision revision = vcs.getCurrentRevision();
         assertEquals("1", revision.getCommitMessage());

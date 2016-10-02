@@ -1,7 +1,7 @@
 package ru.spbau.mit.vcs;
 
 import ru.spbau.mit.vcs.revision.Branch;
-import ru.spbau.mit.vcs.revision.ContentManager;
+import ru.spbau.mit.vcs.repository.Repository;
 import ru.spbau.mit.vcs.revision.Revision;
 
 import java.io.IOException;
@@ -16,24 +16,24 @@ public class VCS {
     private int nextRevisionNumber;
     private final Set<Branch> branches;
     private final Map<Integer, Revision> revisions;
-    private final ContentManager content;
+    private final Repository repository;
 
     public VCS() {
         this(System.getProperty("user.dir"));
     }
 
     public VCS(String workingDir) {
-        this(new Branch(DEFAULT_BRANCH, 0), 0, new HashSet<>(), new HashMap<>(), new ContentManager(workingDir), 1);
+        this(new Branch(DEFAULT_BRANCH, 0), 0, new HashSet<>(), new HashMap<>(), new Repository(workingDir), 1);
         branches.add(currentBranch);
     }
 
     public VCS(Branch currentBranch, int currentRevision, Set<Branch> branches,
-               Map<Integer, Revision> revisions, ContentManager content, int maxRevision) {
+               Map<Integer, Revision> revisions, Repository repository, int maxRevision) {
         this.currentBranch = currentBranch;
         this.currentRevision = currentRevision;
         this.branches = branches;
         this.revisions = revisions;
-        this.content = content;
+        this.repository = repository;
         this.nextRevisionNumber = maxRevision;
     }
 
@@ -80,7 +80,7 @@ public class VCS {
                 throw new VCSException("Checkout failed: branch and revision not found");
             }
         }
-        content.checkoutRevision(currentRevision);
+        repository.checkoutRevision(currentRevision);
     }
 
     public void commit(String message) throws VCSException, IOException {
@@ -88,8 +88,8 @@ public class VCS {
             throw new VCSException("No tracked branch for commit");
         }
         int number = addRevision(message);
-        System.out.println("Commited revision " + number);
-        content.writeRevision(number);
+        System.out.println("Committed revision " + number);
+        repository.writeRevision(number);
     }
 
     private int addRevision(String message) throws IOException {
@@ -110,8 +110,8 @@ public class VCS {
         return revisions.get(number);
     }
 
-    public void addFiles(List<String> files) throws IOException {
-        content.addFiles(files);
+    public Repository getRepository() {
+        return repository;
     }
 
     public void merge(String branch, String message) throws VCSException, IOException {
@@ -138,11 +138,11 @@ public class VCS {
             System.out.println("Nothing to merge: branch is up-to-date");
             return;
         }
-        content.merge(numFrom, currentRevision, revisionFrom.getNumber(), nextRevisionNumber);
+        repository.merge(numFrom, currentRevision, revisionFrom.getNumber(), nextRevisionNumber);
         String mergeMessage = "Merged branch " + merged.get().getName() + " into " + currentBranch.getName();
         System.out.println(mergeMessage);
         addRevision(mergeMessage + (message != null ? ": " + message : ""));
-        content.checkoutRevision(currentRevision);
+        repository.checkoutRevision(currentRevision);
     }
 
     private Optional<Branch> getBranch(String name) {

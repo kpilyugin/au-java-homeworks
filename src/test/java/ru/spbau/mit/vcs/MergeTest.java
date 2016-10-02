@@ -32,7 +32,7 @@ public class MergeTest {
         File file2 = folder.newFile("2");
         String initial = "initial 2";
         FileUtils.writeStringToFile(file2, initial);
-        vcs.addFiles(Arrays.asList(file1.getAbsolutePath(), file2.getAbsolutePath()));
+        vcs.getRepository().addFiles(Arrays.asList(file1.getAbsolutePath(), file2.getAbsolutePath()));
         vcs.commit("1");
 
         vcs.createBranch("branch");
@@ -40,7 +40,7 @@ public class MergeTest {
         FileUtils.writeStringToFile(file2, changed);
         FileUtils.deleteQuietly(file1);
         File file3 = folder.newFile("3");
-        vcs.addFiles(Collections.singletonList(file3.getAbsolutePath()));
+        vcs.getRepository().addFiles(Collections.singletonList(file3.getAbsolutePath()));
         vcs.commit("2");
 
         vcs.checkout("master");
@@ -63,7 +63,7 @@ public class MergeTest {
         File file = folder.newFile("1");
         FileUtils.writeStringToFile(file, "initial 1");
 
-        vcs.addFiles(Collections.singletonList(file.getAbsolutePath()));
+        vcs.getRepository().addFiles(Collections.singletonList(file.getAbsolutePath()));
         vcs.commit("1");
 
         vcs.createBranch("branch");
