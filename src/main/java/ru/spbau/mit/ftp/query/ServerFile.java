@@ -1,10 +1,10 @@
 package ru.spbau.mit.ftp.query;
 
-public class File {
+public class ServerFile {
     private final int size;
     private final byte[] data;
 
-    public File(int size, byte[] data) {
+    public ServerFile(int size, byte[] data) {
         this.size = size;
         this.data = data;
     }

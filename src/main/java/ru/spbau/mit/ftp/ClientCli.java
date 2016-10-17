@@ -1,6 +1,6 @@
 package ru.spbau.mit.ftp;
 
-import ru.spbau.mit.ftp.query.File;
+import ru.spbau.mit.ftp.query.ServerFile;
 import ru.spbau.mit.ftp.query.FileInfo;
 
 import java.io.IOException;
@@ -50,7 +50,7 @@ public class ClientCli {
         }
     }
 
-    private static void dumpFile(File file) {
+    private static void dumpFile(ServerFile file) {
         System.out.println("File size = " + file.getSize());
     }
 }

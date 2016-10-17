@@ -23,8 +23,12 @@ public class Server {
         this.port = port;
     }
 
-    public void start() throws IOException {
-        socket = new ServerSocket(port);
+    public void start() {
+        try {
+            socket = new ServerSocket(port);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
         System.out.println("Started server on port " + port);
         run();
     }
@@ -41,14 +45,19 @@ public class Server {
                 Socket connection = socket.accept();
                 executor.submit(() -> handleConnection(connection));
             } catch (IOException e) {
-                System.err.println("Failed to connect");
-                e.printStackTrace();
+                if (socket == null || socket.isClosed()) {
+                    System.out.println("Socket is closed");
+                    return;
+                } else {
+                    throw new RuntimeException(e);
+                }
             }
         }
     }
 
     private void handleConnection(Socket connection) {
         try {
+            System.out.println("New connection: " + connection);
             DataInputStream input = new DataInputStream(connection.getInputStream());
             DataOutputStream output = new DataOutputStream(connection.getOutputStream());
             int type;
@@ -68,6 +77,7 @@ public class Server {
                     throw e;
                 }
             }
+            System.out.println("Disconnected from " + connection);
         } catch (IOException e) {
             System.err.println("Failed processing query: ");
             e.printStackTrace();

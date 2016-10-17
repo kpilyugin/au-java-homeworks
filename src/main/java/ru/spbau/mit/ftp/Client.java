@@ -1,7 +1,7 @@
 package ru.spbau.mit.ftp;
 
-import ru.spbau.mit.ftp.query.File;
 import ru.spbau.mit.ftp.query.FileInfo;
+import ru.spbau.mit.ftp.query.ServerFile;
 import ru.spbau.mit.ftp.query.Type;
 
 import java.io.DataInputStream;
@@ -49,19 +49,19 @@ public class Client {
         return response;
     }
 
-    public File executeGet(String path) throws IOException {
+    public ServerFile executeGet(String path) throws IOException {
         output.writeInt(Type.GET);
         output.writeUTF(path);
         output.flush();
 
         int size = input.readInt();
         if (size == 0) {
-            return new File(0, null);
+            return new ServerFile(0, null);
         } else {
             byte[] data = new byte[size];
             //noinspection ResultOfMethodCallIgnored
             input.read(data);
-            return new File(size, data);
+            return new ServerFile(size, data);
         }
     }
 }
