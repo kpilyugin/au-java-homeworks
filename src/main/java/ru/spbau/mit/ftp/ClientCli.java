@@ -24,8 +24,7 @@ public class ClientCli {
                     switch (tokens[0]) {
                         case "exit":
                             client.disconnect();
-                            System.exit(0);
-                            break;
+                            return;
                         case "list":
                             dumpList(client.executeList(tokens[1]));
                             break;

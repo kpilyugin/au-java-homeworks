@@ -52,12 +52,12 @@ public class Server {
             System.out.println("New connection: " + connection);
             DataInputStream input = new DataInputStream(connection.getInputStream());
             DataOutputStream output = new DataOutputStream(connection.getOutputStream());
-            int type;
-            while ((type = input.readInt()) != Type.DISCONNECT) {
+            while (!connection.isClosed() && connection.isConnected()) {
+                int queryType = input.readInt();
                 String path = input.readUTF();
-                System.out.println("Got query: " + type + " " + path);
+                System.out.println("Got query: " + queryType + " " + path);
                 try {
-                    if (type == Type.GET) {
+                    if (queryType == Type.GET) {
                         getFile(path, output);
                     } else {
                         listFiles(path, output);
@@ -69,11 +69,16 @@ public class Server {
                     throw e;
                 }
             }
-            connection.close();
+        } catch (EOFException e) {
             System.out.println("Disconnected from " + connection);
         } catch (IOException e) {
             System.err.println("Failed processing query: ");
             e.printStackTrace();
+        } finally {
+            try {
+                connection.close();
+            } catch (IOException ignored) {
+            }
         }
     }
 
