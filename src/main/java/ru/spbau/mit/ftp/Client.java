@@ -28,7 +28,6 @@ public class Client {
     }
 
     public void disconnect() throws IOException {
-        output.writeInt(0);
         socket.close();
         socket = null;
     }

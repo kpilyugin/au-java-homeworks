@@ -10,6 +10,7 @@ import ru.spbau.mit.ftp.query.ServerFile;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.Random;
 
 public class FtpTest {
@@ -24,7 +25,13 @@ public class FtpTest {
     @Before
     public void setUp() throws IOException {
         server = new Server(PORT);
-        Thread serverThread = new Thread(server::start);
+        Thread serverThread = new Thread(() -> {
+            try {
+                server.start();
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
+        });
         serverThread.setDaemon(true);
         serverThread.start();
 
