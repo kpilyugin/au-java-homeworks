@@ -1,12 +1,11 @@
 package ru.spbau.mit.ftp;
 
+import org.apache.commons.io.IOUtils;
 import ru.spbau.mit.ftp.query.FileInfo;
 import ru.spbau.mit.ftp.query.ServerFile;
 import ru.spbau.mit.ftp.query.Type;
 
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.IOException;
+import java.io.*;
 import java.net.Socket;
 
 public class Client {
@@ -54,14 +53,15 @@ public class Client {
         output.writeUTF(path);
         output.flush();
 
-        int size = input.readInt();
+        long size = input.readLong();
         if (size == 0) {
             return new ServerFile(0, null);
         } else {
-            byte[] data = new byte[size];
-            //noinspection ResultOfMethodCallIgnored
-            input.read(data);
-            return new ServerFile(size, data);
+            File result = new File(path);
+            try (FileOutputStream fileOutputStream = new FileOutputStream(result)) {
+                IOUtils.copyLarge(input, fileOutputStream, 0, size);
+            }
+            return new ServerFile(size, result);
         }
     }
 }

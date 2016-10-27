@@ -1,19 +1,21 @@
 package ru.spbau.mit.ftp.query;
 
-public class ServerFile {
-    private final int size;
-    private final byte[] data;
+import java.io.File;
 
-    public ServerFile(int size, byte[] data) {
+public class ServerFile {
+    private final long size;
+    private final File file;
+
+    public ServerFile(long size, File file) {
         this.size = size;
-        this.data = data;
+        this.file = file;
     }
 
-    public int getSize() {
+    public long getSize() {
         return size;
     }
 
-    public byte[] getData() {
-        return data;
+    public File getFile() {
+        return file;
     }
 }

@@ -1,15 +1,11 @@
 package ru.spbau.mit.ftp;
 
+import org.apache.commons.io.IOUtils;
 import ru.spbau.mit.ftp.query.Type;
 
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -100,11 +96,12 @@ public class Server {
     private static void getFile(String path, DataOutputStream output) throws IOException {
         File file = new File(path);
         if (!file.exists() || file.isDirectory()) {
-            output.writeInt(0);
+            output.writeLong(0);
         } else {
-            byte[] data = Files.readAllBytes(Paths.get(path));
-            output.writeInt(data.length);
-            output.write(data);
+            output.writeLong(file.length());
+            try (FileInputStream fis = new FileInputStream(file)) {
+                IOUtils.copyLarge(fis, output);
+            }
         }
     }
 

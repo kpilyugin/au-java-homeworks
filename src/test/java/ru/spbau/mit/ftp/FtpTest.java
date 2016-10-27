@@ -1,12 +1,14 @@
 package ru.spbau.mit.ftp;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
 import org.junit.*;
 import org.junit.rules.TemporaryFolder;
 import ru.spbau.mit.ftp.query.FileInfo;
 import ru.spbau.mit.ftp.query.ServerFile;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.Random;
 
@@ -62,7 +64,8 @@ public class FtpTest {
         FileUtils.writeByteArrayToFile(file, data);
         ServerFile serverFile = client.executeGet(file.getPath());
         Assert.assertEquals(size, serverFile.getSize());
-        Assert.assertArrayEquals(data, serverFile.getData());
+        byte[] serverData = IOUtils.toByteArray(new FileInputStream(serverFile.getFile()));
+        Assert.assertArrayEquals(data, serverData);
     }
 
     @Test
@@ -93,7 +96,8 @@ public class FtpTest {
                     client.connect();
                     ServerFile serverFile = client.executeGet(file.getPath());
                     Assert.assertEquals(size, serverFile.getSize());
-                    Assert.assertArrayEquals(data, serverFile.getData());
+                    byte[] serverData = IOUtils.toByteArray(new FileInputStream(serverFile.getFile()));
+                    Assert.assertArrayEquals(data, serverData);
                     client.disconnect();
                 } catch (IOException e) {
                     throw new RuntimeException(e);
