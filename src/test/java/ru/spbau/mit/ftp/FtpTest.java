@@ -66,6 +66,18 @@ public class FtpTest {
     }
 
     @Test
+    public void testNoDirectory() throws IOException {
+        FileInfo[] files = client.executeList("noSuchDirectory");
+        Assert.assertEquals(0, files.length);
+    }
+
+    @Test
+    public void testNoFile() throws IOException {
+        ServerFile file = client.executeGet("noSuchFile");
+        Assert.assertEquals(0, file.getSize());
+    }
+
+    @Test
     public void testMultipleClients() throws IOException, InterruptedException {
         File file = folder.newFile();
         int size = 10;
