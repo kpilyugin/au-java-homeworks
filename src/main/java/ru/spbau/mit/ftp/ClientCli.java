@@ -50,6 +50,7 @@ public class ClientCli {
     }
 
     private static void dumpFile(ServerFile file) {
-        System.out.println("File size = " + file.getSize() + ", saved at " + file.getFile().getAbsolutePath());
+        long size = file.getSize();
+        System.out.println("File size = " + size + (size > 0 ? ", saved at " + file.getFile().getAbsolutePath() : ""));
     }
 }
