@@ -76,7 +76,7 @@ public class TorrentClient extends Server {
     }
 
     public void addFile(String name) throws IOException {
-        File file = new File(name);
+        File file = new File(homeDir, name);
         if (!file.exists()) {
             LOGGER.warning("File " + name + " does not exist.");
             return;

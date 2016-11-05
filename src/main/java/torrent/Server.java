@@ -31,6 +31,7 @@ public abstract class Server implements Runnable {
 
     protected abstract void processRequest(InetAddress address, DataInputStream input, DataOutputStream output) throws IOException;
 
+    @Override
     public void run() {
         try {
             serverSocket = new ServerSocket(localPort);

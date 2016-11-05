@@ -3,13 +3,11 @@ package torrent.tracker;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
-import torrent.client.TorrentFile;
 
 import java.io.*;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 public class TrackerStateSaver {
     public static final String PATH = "tracker_files.json";

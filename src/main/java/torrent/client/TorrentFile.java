@@ -77,6 +77,9 @@ public class TorrentFile {
     }
 
     public int getPartSize(int part) {
+        if (part >= totalParts()) {
+            return 0;
+        }
         if (part < totalParts() - 1) {
             return PART_SIZE;
         }
