@@ -165,7 +165,7 @@ public class TorrentClient extends Server {
         connect(trackerAddress, task);
     }
 
-    private void connect(InetSocketAddress address, ClientTask task) throws IOException {
+    private static void connect(InetSocketAddress address, ClientTask task) throws IOException {
         try (Socket socket = new Socket(address.getAddress(), address.getPort())) {
             DataInputStream input = new DataInputStream(socket.getInputStream());
             DataOutputStream output = new DataOutputStream(socket.getOutputStream());

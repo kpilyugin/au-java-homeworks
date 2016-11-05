@@ -27,7 +27,7 @@ public class FileManager {
         }
     }
 
-    private void copy(InputStream input, OutputStream output, int size) throws IOException {
+    private static void copy(InputStream input, OutputStream output, int size) throws IOException {
         byte[] buffer = new byte[BUFFER_SIZE];
         int bytesRead = 0;
         while (size > 0 && bytesRead >= 0) {
