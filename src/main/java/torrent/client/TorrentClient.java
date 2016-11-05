@@ -5,6 +5,7 @@ import torrent.tracker.FileInfo;
 import torrent.tracker.TrackerRequests;
 
 import java.io.*;
+import java.net.ConnectException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.Socket;
@@ -135,7 +136,7 @@ public class TorrentClient extends Server {
         for (Future<?> future : futures) {
             future.get();
         }
-        LOGGER.info("Successfully loaded file.");
+        LOGGER.info("Successfully loaded file " + new File(homeDir, file.getName()));
     }
 
     private List<InetSocketAddress> getSeeds(int id) throws IOException {
@@ -218,6 +219,8 @@ public class TorrentClient extends Server {
                     }
                     update();
                 });
+            } catch (ConnectException e) {
+                LOGGER.warning("Failed connection to seed");
             } catch (IOException e) {
                 throw new UncheckedIOException(e);
             }

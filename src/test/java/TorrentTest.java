@@ -11,12 +11,14 @@ import java.math.BigInteger;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.nio.charset.Charset;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
 public class TorrentTest {
 
     private static final int RANDOM_TESTS = 10;
+    private static final int NUM_CLIENTS = 20;
 
     private File trackerFolder;
     private TorrentTracker tracker;
@@ -26,18 +28,18 @@ public class TorrentTest {
     private TorrentClient client2;
 
     @Rule
-    public final TemporaryFolder folder = new TemporaryFolder();
+    public final TemporaryFolder tempFolder = new TemporaryFolder();
 
     @Before
     public void setUp() throws Exception {
-        trackerFolder = folder.newFolder();
+        trackerFolder = tempFolder.newFolder();
         tracker = new TorrentTracker(trackerFolder.getPath());
         tracker.start(TorrentTracker.PORT);
 
         InetSocketAddress trackerAddress = new InetSocketAddress(InetAddress.getLocalHost(), TorrentTracker.PORT);
-        folder1 = folder.newFolder();
+        folder1 = tempFolder.newFolder();
         client1 = new TorrentClient(trackerAddress, 12345, folder1.getPath());
-        folder2 = folder.newFolder();
+        folder2 = tempFolder.newFolder();
         client2 = new TorrentClient(trackerAddress, 12346, folder2.getPath());
     }
 
@@ -93,6 +95,36 @@ public class TorrentTest {
         Random random = new Random();
         for (int i = 0; i < RANDOM_TESTS; i++) {
             testLoadFile(random.nextInt(1000000));
+        }
+    }
+
+    @Test
+    public void testMultipleClients() throws Exception {
+        List<File> folders = new ArrayList<>();
+        List<TorrentClient> clients = new ArrayList<>();
+        InetSocketAddress trackerAddress = new InetSocketAddress(InetAddress.getLocalHost(), TorrentTracker.PORT);
+        Random random = new Random();
+        for (int i = 0; i < NUM_CLIENTS; i++) {
+            File folder = tempFolder.newFolder();
+            folders.add(folder);
+            clients.add(new TorrentClient(trackerAddress, random.nextInt(10000), folder.getPath()));
+        }
+
+        String name = new BigInteger(100, new Random()).toString(32);
+        File file = new File(folders.get(0), name);
+        String content = new BigInteger(1000000, new Random()).toString(32);
+        FileUtils.writeStringToFile(file, content, Charset.defaultCharset());
+        clients.get(0).addFile(name);
+        int id = 1;
+
+        for (int i = 1; i < NUM_CLIENTS; i++) {
+            clients.get(i).getFile(id);
+            File loaded = new File(folders.get(i), name);
+            String result = FileUtils.readFileToString(loaded, Charset.defaultCharset());
+            Assert.assertEquals(result, content);
+        }
+        for (TorrentClient client : clients) {
+            client.end();
         }
     }
 
