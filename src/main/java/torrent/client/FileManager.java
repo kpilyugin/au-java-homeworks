@@ -5,15 +5,10 @@ import java.nio.channels.Channels;
 
 public class FileManager {
     private final static int BUFFER_SIZE = 1024;
-    private final String homeDir;
-
-    public FileManager(String homeDir) {
-        this.homeDir = homeDir;
-    }
 
     public void readPart(TorrentFile torrentFile, int part, OutputStream output) throws IOException {
         long offset = (long) part * TorrentFile.PART_SIZE;
-        try (RandomAccessFile file = new RandomAccessFile(new File(homeDir, torrentFile.getName()), "r")) {
+        try (RandomAccessFile file = new RandomAccessFile(torrentFile.getFile(), "r")) {
             file.seek(offset);
             copy(Channels.newInputStream(file.getChannel()), output, torrentFile.getPartSize(part));
         }
@@ -21,7 +16,7 @@ public class FileManager {
 
     public void writePart(TorrentFile torrentFile, int part, InputStream input) throws IOException {
         long offset = (long) part * TorrentFile.PART_SIZE;
-        try (RandomAccessFile file = new RandomAccessFile(new File(homeDir, torrentFile.getName()), "rw")) {
+        try (RandomAccessFile file = new RandomAccessFile(torrentFile.getFile(), "rw")) {
             file.seek(offset);
             copy(input, Channels.newOutputStream(file.getChannel()), torrentFile.getPartSize(part));
         }

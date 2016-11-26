@@ -3,10 +3,12 @@ import org.junit.Test;
 import torrent.client.TorrentFile;
 import torrent.tracker.FileInfo;
 
+import java.io.File;
+
 public class TorrentFileTest {
     @Test
     public void testEmpty() {
-        TorrentFile file = TorrentFile.createEmpty(new FileInfo(1, "1", 1025));
+        TorrentFile file = TorrentFile.createEmpty(new FileInfo(1, "1", TorrentFile.PART_SIZE + 1), new File("1"));
         int part = 0;
         Assert.assertFalse(file.containsPart(part));
         file.startLoading(part);
@@ -23,15 +25,15 @@ public class TorrentFileTest {
 
     @Test
     public void testFull() {
-        TorrentFile file = TorrentFile.createFull("1", 20000, 2);
+        TorrentFile file = TorrentFile.createFull(new File("1"), TorrentFile.PART_SIZE * 10, 2);
         Assert.assertTrue(file.containsPart(5));
         Assert.assertTrue(file.isFull());
     }
 
     @Test
     public void testPartSize() {
-        TorrentFile file = TorrentFile.createEmpty(new FileInfo(1, "1", 1026));
-        Assert.assertEquals(1024, file.getPartSize(0));
+        TorrentFile file = TorrentFile.createEmpty(new FileInfo(1, "1", TorrentFile.PART_SIZE + 2), new File("1"));
+        Assert.assertEquals(TorrentFile.PART_SIZE, file.getPartSize(0));
         Assert.assertEquals(2, file.getPartSize(1));
         Assert.assertEquals(0, file.getPartSize(2));
     }

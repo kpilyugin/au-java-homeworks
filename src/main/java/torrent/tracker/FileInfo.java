@@ -2,6 +2,7 @@ package torrent.tracker;
 
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.text.DecimalFormat;
 
 public class FileInfo {
     private final int id;
@@ -35,5 +36,16 @@ public class FileInfo {
 
     public long getSize() {
         return size;
+    }
+
+    @Override
+    public String toString() {
+        return id + ": " + name + ", " + toReadableSize(size);
+    }
+
+    public static String toReadableSize(long size) {
+        String[] units = new String[]{"B", "kB", "MB", "GB"};
+        int digitGroups = (int) (Math.log10(size) / Math.log10(1024));
+        return new DecimalFormat("#,##0.#").format(size / Math.pow(1024, digitGroups)) + " " + units[digitGroups];
     }
 }

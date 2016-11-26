@@ -1,6 +1,8 @@
 package torrent.client;
 
 import torrent.Server;
+import torrent.exception.DownloadException;
+import torrent.exception.NoSeedFoundException;
 import torrent.tracker.FileInfo;
 import torrent.tracker.TrackerRequests;
 
@@ -9,10 +11,7 @@ import java.net.ConnectException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.Socket;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -31,15 +30,17 @@ public class TorrentClient extends Server {
     private final InetSocketAddress trackerAddress;
     private final String homeDir;
 
-    public TorrentClient(InetSocketAddress trackerAddress, int port) throws IOException, ExecutionException, InterruptedException {
+    public TorrentClient(InetSocketAddress trackerAddress, int port) 
+            throws IOException, ExecutionException, InterruptedException {
         this(trackerAddress, port, System.getProperty("user.dir"));
     }
 
-    public TorrentClient(InetSocketAddress trackerAddress, int port, String homeDir) throws IOException, ExecutionException, InterruptedException {
+    public TorrentClient(InetSocketAddress trackerAddress, int port, String homeDir) 
+            throws IOException, ExecutionException, InterruptedException {
         this.trackerAddress = trackerAddress;
         this.homeDir = homeDir;
         files = ClientStateSaver.getFiles(homeDir);
-        fileManager = new FileManager(homeDir);
+        fileManager = new FileManager();
         start(port);
         executor.scheduleAtFixedRate(() -> {
             try {
@@ -50,7 +51,11 @@ public class TorrentClient extends Server {
         }, 0, HEARTBEAT_PERIOD, TimeUnit.MINUTES);
         for (TorrentFile file : files.values()) {
             if (!file.isFull()) {
-                loadFile(file);
+                try {
+                    loadFile(file, null);
+                } catch (DownloadException e) {
+                    LOGGER.warning("File " + file + " is not fully loaded");
+                }
             }
         }
     }
@@ -76,8 +81,20 @@ public class TorrentClient extends Server {
         }));
     }
 
+    public Collection<TorrentFile> getFiles() {
+        return files.values();
+    }
+
+    public boolean containsFile(FileInfo file) {
+        return files.containsKey(file.getId());
+    }
+
     public void addFile(String name) throws IOException {
-        File file = new File(homeDir, name);
+        addFile(new File(homeDir, name));
+    }
+
+    public void addFile(File file) throws IOException {
+        String name = file.getName();
         if (!file.exists()) {
             LOGGER.warning("File " + name + " does not exist.");
             return;
@@ -89,7 +106,7 @@ public class TorrentClient extends Server {
             output.writeLong(size);
 
             int id = input.readInt();
-            files.put(id, TorrentFile.createFull(name, size, id));
+            files.put(id, TorrentFile.createFull(file, size, id));
         });
         update();
     }
@@ -106,37 +123,47 @@ public class TorrentClient extends Server {
         return result;
     }
 
-    public void getFile(int id) throws IOException, ExecutionException, InterruptedException {
+    public void getFile(FileInfo info, File fileTo, LoadingHandler handler) 
+            throws IOException, ExecutionException, InterruptedException, DownloadException {
+        if (!files.containsKey(info.getId())) {
+            TorrentFile file = TorrentFile.createEmpty(info, fileTo);
+            files.put(info.getId(), file);
+            loadFile(file, handler);
+        }
+    }
+
+    public void getFile(int id) throws IOException, ExecutionException, InterruptedException, DownloadException {
         for (FileInfo info : listFiles()) {
             if (id == info.getId()) {
-                TorrentFile file = TorrentFile.createEmpty(info);
-                files.put(id, file);
-                loadFile(file);
-                return;
+                getFile(info, new File(homeDir, info.getName()), null);
             }
         }
         LOGGER.warning("File with id = " + id + " not found.");
     }
 
-    private void loadFile(TorrentFile file) throws IOException, ExecutionException, InterruptedException {
+    private void loadFile(TorrentFile file, LoadingHandler handler) 
+            throws IOException, ExecutionException, InterruptedException, DownloadException {
         List<InetSocketAddress> seeds = getSeeds(file.getId());
         if (seeds.size() == 0) {
-            LOGGER.warning("No seeds found");
-            return;
+            throw new NoSeedFoundException(file.getName());
         }
 
         List<Future<?>> futures = new ArrayList<>();
         for (InetSocketAddress seed : seeds) {
             try {
-                futures.add(executor.submit(new DownloadPartsTask(seed, file)));
+                futures.add(executor.submit(new DownloadPartsTask(seed, file, handler)));
             } catch (Exception e) {
-                LOGGER.warning("Seed is unavailable");
+                LOGGER.warning("Seed " + seed + " is unavailable");
             }
         }
         for (Future<?> future : futures) {
             future.get();
         }
-        LOGGER.info("Successfully loaded file " + new File(homeDir, file.getName()));
+        if (file.isFull()) {
+            LOGGER.info("Successfully loaded file " + file.getFile());
+        } else {
+            throw new DownloadException("Not fully loaded " + file.getName());
+        }
     }
 
     private List<InetSocketAddress> getSeeds(int id) throws IOException {
@@ -200,10 +227,12 @@ public class TorrentClient extends Server {
     private class DownloadPartsTask implements Runnable {
         private final InetSocketAddress seed;
         private final TorrentFile file;
+        private final LoadingHandler handler;
 
-        public DownloadPartsTask(InetSocketAddress seed, TorrentFile file) {
+        public DownloadPartsTask(InetSocketAddress seed, TorrentFile file, LoadingHandler handler) {
             this.seed = seed;
             this.file = file;
+            this.handler = handler;
         }
 
         @Override
@@ -215,12 +244,15 @@ public class TorrentClient extends Server {
                         if (!file.containsPart(part) && !file.isPartLoading(part)) {
                             file.startLoading(part);
                             loadPart(input, output, part);
+                            if (handler != null) {
+                                handler.onPartLoaded(file.getParts().size(), file.totalParts());
+                            }
                         }
                     }
                     update();
                 });
             } catch (ConnectException e) {
-                LOGGER.warning("Failed connection to seed");
+                LOGGER.warning("No connection to seed");
             } catch (IOException e) {
                 throw new UncheckedIOException(e);
             }
