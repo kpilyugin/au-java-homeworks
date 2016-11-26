@@ -49,15 +49,6 @@ public class TorrentClient extends Server {
                 throw new UncheckedIOException(e);
             }
         }, 0, HEARTBEAT_PERIOD, TimeUnit.MINUTES);
-        for (TorrentFile file : files.values()) {
-            if (!file.isFull()) {
-                try {
-                    loadFile(file, null);
-                } catch (DownloadException e) {
-                    LOGGER.warning("File " + file + " is not fully loaded");
-                }
-            }
-        }
     }
 
     @Override
@@ -85,8 +76,9 @@ public class TorrentClient extends Server {
         return files.values();
     }
 
-    public boolean containsFile(FileInfo file) {
-        return files.containsKey(file.getId());
+    public boolean containsFile(FileInfo info) {
+        TorrentFile file = files.get(info.getId());
+        return file != null && file.isFull();
     }
 
     public void addFile(String name) throws IOException {
@@ -125,11 +117,15 @@ public class TorrentClient extends Server {
 
     public void getFile(FileInfo info, File fileTo, LoadingHandler handler)
             throws IOException, ExecutionException, InterruptedException, DownloadException {
-        if (!files.containsKey(info.getId())) {
-            TorrentFile file = TorrentFile.createEmpty(info, fileTo);
+        TorrentFile file = files.get(info.getId());
+        if (file == null) {
+            file = TorrentFile.createEmpty(info, fileTo);
             files.put(info.getId(), file);
-            loadFile(file, handler);
         }
+        if (file.isFull()) {
+            return;
+        }
+        loadFile(file, handler);
     }
 
     public void getFile(int id) throws IOException, ExecutionException, InterruptedException, DownloadException {
@@ -246,6 +242,7 @@ public class TorrentClient extends Server {
                             file.startLoading(part);
                             loadPart(input, output, part);
                             if (handler != null) {
+                                System.out.println("part loaded: " + part + ", total = " + file.totalParts());
                                 handler.onPartLoaded(file.getParts().size(), file.totalParts());
                             }
                         }

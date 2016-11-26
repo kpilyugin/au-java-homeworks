@@ -4,6 +4,7 @@ import java.io.*;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.SocketException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.logging.Logger;
@@ -64,7 +65,7 @@ public abstract class Server implements Runnable {
                 processRequest(socket.getInetAddress(), input, output);
                 output.flush();
             }
-        } catch (EOFException ignored) {
+        } catch (SocketException | EOFException ignored) {
             // disconnected
         } catch (IOException e) {
             LOGGER.warning("Error in connection: ");
