@@ -20,14 +20,15 @@ public class TorrentTracker extends Server {
     private final List<FileInfo> files;
     private final Set<ClientInfo> activeClients = new HashSet<>();
 
-    public TorrentTracker() {
+    public TorrentTracker() throws IOException {
         this(System.getProperty("user.dir"));
     }
 
-    public TorrentTracker(String homeDir) {
+    public TorrentTracker(String homeDir) throws IOException {
         this.homeDir = homeDir;
         files = TrackerStateSaver.getFiles(homeDir);
         maxUsedId = files.isEmpty() ? 0 : files.get(files.size() - 1).getId();
+        start(PORT);
     }
 
     @Override

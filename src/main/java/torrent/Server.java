@@ -35,6 +35,9 @@ public abstract class Server implements Runnable {
     public void run() {
         try {
             serverSocket = new ServerSocket(localPort);
+            if (localPort == 0) {
+                localPort = serverSocket.getLocalPort();
+            }
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }

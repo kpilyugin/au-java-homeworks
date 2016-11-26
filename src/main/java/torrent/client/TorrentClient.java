@@ -7,7 +7,6 @@ import torrent.tracker.FileInfo;
 import torrent.tracker.TrackerRequests;
 
 import java.io.*;
-import java.net.ConnectException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.Socket;
@@ -21,7 +20,7 @@ public class TorrentClient extends Server {
 
     private static final Logger LOGGER = Logger.getLogger(TorrentClient.class.getName());
 
-    private static final int HEARTBEAT_PERIOD = 5;
+    private static final int HEARTBEAT_PERIOD = 1;
     private static final int STAT = 1;
     private static final int GET = 2;
 
@@ -30,18 +29,19 @@ public class TorrentClient extends Server {
     private final InetSocketAddress trackerAddress;
     private final String homeDir;
 
-    public TorrentClient(InetSocketAddress trackerAddress, int port) 
+    public TorrentClient(InetSocketAddress trackerAddress, int port)
             throws IOException, ExecutionException, InterruptedException {
         this(trackerAddress, port, System.getProperty("user.dir"));
     }
 
-    public TorrentClient(InetSocketAddress trackerAddress, int port, String homeDir) 
+    public TorrentClient(InetSocketAddress trackerAddress, int port, String homeDir)
             throws IOException, ExecutionException, InterruptedException {
         this.trackerAddress = trackerAddress;
         this.homeDir = homeDir;
         files = ClientStateSaver.getFiles(homeDir);
         fileManager = new FileManager();
         start(port);
+        update();
         executor.scheduleAtFixedRate(() -> {
             try {
                 update();
@@ -123,7 +123,7 @@ public class TorrentClient extends Server {
         return result;
     }
 
-    public void getFile(FileInfo info, File fileTo, LoadingHandler handler) 
+    public void getFile(FileInfo info, File fileTo, LoadingHandler handler)
             throws IOException, ExecutionException, InterruptedException, DownloadException {
         if (!files.containsKey(info.getId())) {
             TorrentFile file = TorrentFile.createEmpty(info, fileTo);
@@ -136,12 +136,13 @@ public class TorrentClient extends Server {
         for (FileInfo info : listFiles()) {
             if (id == info.getId()) {
                 getFile(info, new File(homeDir, info.getName()), null);
+                return;
             }
         }
-        LOGGER.warning("File with id = " + id + " not found.");
+        throw new FileNotFoundException("File with id = " + id + " not found.");
     }
 
-    private void loadFile(TorrentFile file, LoadingHandler handler) 
+    private void loadFile(TorrentFile file, LoadingHandler handler)
             throws IOException, ExecutionException, InterruptedException, DownloadException {
         List<InetSocketAddress> seeds = getSeeds(file.getId());
         if (seeds.size() == 0) {
@@ -177,7 +178,7 @@ public class TorrentClient extends Server {
                 for (int j = 0; j < 4; j++) {
                     address[j] = input.readByte();
                 }
-                short port = input.readShort();
+                int port = input.readShort() & 0xffff;
                 InetAddress inetAddress = InetAddress.getByAddress(address);
                 InetSocketAddress seedAddress = new InetSocketAddress(inetAddress, port);
                 boolean isLoopback = inetAddress.equals(InetAddress.getLoopbackAddress());
@@ -251,10 +252,8 @@ public class TorrentClient extends Server {
                     }
                     update();
                 });
-            } catch (ConnectException e) {
-                LOGGER.warning("No connection to seed");
             } catch (IOException e) {
-                throw new UncheckedIOException(e);
+                LOGGER.warning("No connection to seed");
             }
         }
 
