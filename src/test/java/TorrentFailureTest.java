@@ -38,7 +38,7 @@ public class TorrentFailureTest {
     @Test(expected = ConnectException.class)
     public void testNoTracker() throws Exception {
         InetSocketAddress trackerAddress = new InetSocketAddress(InetAddress.getLocalHost(), TorrentTracker.PORT);
-        client1 = new TorrentClient(trackerAddress, 0);
+        client1 = new TorrentClient(trackerAddress, 0, tempFolder.newFolder().getPath());
     }
 
     @Test(expected = FileNotFoundException.class)
