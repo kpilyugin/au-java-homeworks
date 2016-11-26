@@ -1,9 +1,9 @@
 package torrent.gui;
 
 import javafx.application.Application;
-import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.concurrent.Task;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
@@ -21,8 +21,6 @@ import javafx.stage.Modality;
 import javafx.stage.Stage;
 import torrent.client.TorrentClient;
 import torrent.client.TorrentFile;
-import torrent.exception.DownloadException;
-import torrent.exception.NoSeedFoundException;
 import torrent.tracker.FileInfo;
 import torrent.tracker.TorrentTracker;
 
@@ -53,6 +51,7 @@ public class ClientApp extends Application {
         primaryStage.setOnCloseRequest(event -> {
             try {
                 torrentClient.end();
+                System.exit(0);
             } catch (IOException ignored) {
             }
         });
@@ -202,26 +201,34 @@ public class ClientApp extends Application {
             downloadButton.setOnAction(event -> {
                 File fileTo = showSaveDialog(file.getName());
                 dialog.close();
-                if (fileTo != null) {
-                    final int index = clientFiles.size();
-                    String initial = fileTo.getName() + ": loading started";
-                    clientFiles.add(initial);
-                    try {
-                        torrentClient.getFile(file, fileTo, (current, total) -> Platform.runLater(() -> {
-                            String state = fileTo.getName() + ": loaded " + current + "/" + total;
-                            clientFiles.set(index, state);
-                        }));
-                    } catch (NoSeedFoundException e) {
-                        clientFiles.set(index, file.getName() + ": no seeds available");
-                    } catch (DownloadException e) {
-                        clientFiles.set(index, file.getName() + ": loading failed");
-                    } catch (Exception e) {
-                        showError("Error while loading file: " + e.getMessage());
-                    }
-                } else {
+                if (fileTo == null) {
                     showError("Need to select file location");
+                    return;
                 }
+
+                final int index = clientFiles.size();
+                String initial = fileTo.getName() + ": loading started";
+                clientFiles.add(initial);
+
+                Task<Void> task = new Task<Void>() {
+                    @Override
+                    protected Void call() throws Exception {
+                        torrentClient.getFile(file, fileTo, this::updateProgress);
+                        return null;
+                    }
+                };
+                task.progressProperty().asObject().addListener((observable, oldValue, newValue) ->
+                        clientFiles.set(index, file.getName() + ": loaded " + toPercent(newValue)));
+                task.setOnSucceeded(value -> clientFiles.set(index, file.getName() + ": fully loaded, seeding"));
+                task.setOnFailed(value -> clientFiles.set(index, file.getName() + ": loading failed"));
+                Thread downloadThread = new Thread(task);
+                downloadThread.setDaemon(true);
+                downloadThread.start();
             });
+        }
+
+        private String toPercent(double progress) {
+            return String.format("%.2f", (progress * 100)) + "%";
         }
 
         private void showError(String message) {
