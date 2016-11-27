@@ -242,7 +242,6 @@ public class TorrentClient extends Server {
                             file.startLoading(part);
                             loadPart(input, output, part);
                             if (handler != null) {
-                                System.out.println("part loaded: " + part + ", total = " + file.totalParts());
                                 handler.onPartLoaded(file.getParts().size(), file.totalParts());
                             }
                         }
